@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"EXIT:$?\")",
+      "Read(//g/UE_5.5/Engine/Source/Runtime/Engine/Public/Materials/**)",
+      "Bash(find /f/SideProject/KuluoBishi/.claude -name *.md)",
+      "Bash(find f:/SideProject/KuluoBishi/.claude/worktrees/agent-ade599c3/Source/TuiXiangZi/ -type f -name *.h -o -name *.cpp)",
+      "Bash(find f:/SideProject/KuluoBishi/ -path */worktrees -prune -o -path */Source/TuiXiangZi/*.h -print -o -path */Source/TuiXiangZi/*.cpp -print -o -path */Source/TuiXiangZi/**/*.h -print -o -path */Source/TuiXiangZi/**/*.cpp -print)",
+      "Bash(BASE=\"f:/SideProject/KuluoBishi\")",
+      "Bash(WK=\"$BASE/.claude/worktrees/agent-a6e3cb6c\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Grid/GridTypes.h\" \"$WK/Source/TuiXiangZi/Grid/GridTypes.h\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Grid/GridTypes.cpp\" \"$WK/Source/TuiXiangZi/Grid/GridTypes.cpp\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Grid/TileStyleCatalog.h\" \"$WK/Source/TuiXiangZi/Grid/TileStyleCatalog.h\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Grid/TileStyleCatalog.cpp\" \"$WK/Source/TuiXiangZi/Grid/TileStyleCatalog.cpp\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/LevelData/LevelDataTypes.h\" \"$WK/Source/TuiXiangZi/LevelData/LevelDataTypes.h\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/LevelData/LevelSerializer.h\" \"$WK/Source/TuiXiangZi/LevelData/LevelSerializer.h\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/LevelData/LevelSerializer.cpp\" \"$WK/Source/TuiXiangZi/LevelData/LevelSerializer.cpp\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Gameplay/PushableBox.h\" \"$WK/Source/TuiXiangZi/Gameplay/PushableBox.h\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Gameplay/SokobanCharacter.h\" \"$WK/Source/TuiXiangZi/Gameplay/SokobanCharacter.h\")",
+      "Bash(cp \"$BASE/Source/TuiXiangZi/Gameplay/SokobanCharacter.cpp\" \"$WK/Source/TuiXiangZi/Gameplay/SokobanCharacter.cpp\")",
+      "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/Grid/\"* Source/TuiXiangZi/Grid/)",
+      "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/Gameplay/\"* Source/TuiXiangZi/Gameplay/)",
+      "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/LevelData/\"* Source/TuiXiangZi/LevelData/)"
+    ],
+    "additionalDirectories": [
+      "f:\\SideProject\\KuluoBishi\\Source\\TuiXiangZi",
+      "f:\\SideProject\\KuluoBishi\\.claude\\worktrees\\agent-ade599c3\\Source\\TuiXiangZi\\Gameplay",
+      "f:\\SideProject\\KuluoBishi\\.claude\\worktrees\\agent-a7cead12\\Source\\TuiXiangZi\\Editor"
+    ]
+  }
+}
