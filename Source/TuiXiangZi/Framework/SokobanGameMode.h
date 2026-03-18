@@ -5,6 +5,7 @@
 #include "SokobanGameMode.generated.h"
 
 class AGridManager;
+class UPauseMenuWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStepCountChanged, int32, NewCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelCompleted, int32, TotalSteps);
@@ -34,6 +35,22 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Game")
     void ReturnToMainMenu();
+
+    // ===== Pause Menu =====
+    UFUNCTION(BlueprintCallable, Category = "Game|UI")
+    void TogglePauseMenu();
+
+    UFUNCTION(BlueprintCallable, Category = "Game|UI")
+    void ShowPauseMenu();
+
+    UFUNCTION(BlueprintCallable, Category = "Game|UI")
+    void HidePauseMenu();
+
+    UFUNCTION(BlueprintCallable, Category = "Game|UI")
+    void ShowLevelCompleteMenu(int32 Steps);
+
+    UFUNCTION(BlueprintCallable, Category = "Game|UI")
+    bool IsPauseMenuVisible() const { return bPauseMenuVisible; }
 
     void OnPlayerEnteredGoal(FIntPoint GoalPos);
 
@@ -82,9 +99,18 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game")
     int32 CurrentLevelIndex = 0;
 
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UPauseMenuWidget> PauseMenuWidgetClass;
+
 private:
     UPROPERTY()
     AGridManager* GridManagerRef = nullptr;
+
+    UPROPERTY()
+    UPauseMenuWidget* PauseMenuWidget = nullptr;
+
+    UPROPERTY()
+    bool bPauseMenuVisible = false;
 
     FString CurrentLevelPath;
     bool bFromEditor = false;
@@ -92,4 +118,5 @@ private:
 
     AGridManager* FindOrSpawnGridManager();
     void ExecuteLoadLevel(const FString& JsonPath);
+    void SetUIInputMode(bool bUIMode);
 };

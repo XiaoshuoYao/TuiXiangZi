@@ -29,10 +29,15 @@ public:
     void GoBack();
 
     DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLevelListRefreshed);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSelectionChanged);
 
     /** Fired after RefreshLevelList completes — use in Blueprint to rebuild UI list */
     UPROPERTY(BlueprintAssignable, Category = "Menu")
     FOnLevelListRefreshed OnLevelListRefreshed;
+
+    /** Fired when a level is selected — use in Blueprint to update item visuals */
+    UPROPERTY(BlueprintAssignable, Category = "Menu")
+    FOnSelectionChanged OnSelectionChanged;
 
 protected:
     UPROPERTY(BlueprintReadOnly, Category = "Menu")

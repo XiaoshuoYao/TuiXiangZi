@@ -588,6 +588,7 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         UStaticMeshComponent* GoalComp = NewObject<UStaticMeshComponent>(VisualActor);
         GoalComp->RegisterComponent();
         GoalComp->AttachToComponent(MeshComp, FAttachmentTransformRules::KeepRelativeTransform);
+        GoalComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
         const FTileVisualStyle* GoalStyle = ResolveTileVisual(Cell); // 用原始 Goal 类型查样式
         if (GoalStyle && GoalStyle->Mesh)

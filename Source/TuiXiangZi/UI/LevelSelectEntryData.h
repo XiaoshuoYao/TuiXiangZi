@@ -28,4 +28,7 @@ public:
 
     UPROPERTY(BlueprintReadOnly, Category = "LevelSelect")
     ELevelSourceType SourceType = ELevelSourceType::Preset;
+
+    UPROPERTY(BlueprintReadOnly, Category = "LevelSelect")
+    bool bIsSelected = false;
 };

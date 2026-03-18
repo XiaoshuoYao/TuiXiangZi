@@ -1,0 +1,5903 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/ue-mcp/tools.schema.json",
+  "title": "UE-MCP Tool I/O Schemas",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "definitions",
+    "tools"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for this tool schema bundle, independent from MCP protocol version.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": [
+        "0.1.0"
+      ]
+    },
+    "definitions": {
+      "$ref": "#/$defs/Definitions"
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ue_ping": {
+          "$ref": "#/$defs/Tool_ue_ping"
+        },
+        "ue_capabilities": {
+          "$ref": "#/$defs/Tool_ue_capabilities"
+        },
+        "ue_settings_get": {
+          "$ref": "#/$defs/Tool_ue_settings_get"
+        },
+        "ue_settings_set": {
+          "$ref": "#/$defs/Tool_ue_settings_set"
+        },
+        "ue_log_tail": {
+          "$ref": "#/$defs/Tool_ue_log_tail"
+        },
+        "ue_asset_search": {
+          "$ref": "#/$defs/Tool_ue_asset_search"
+        },
+        "ue_asset_get": {
+          "$ref": "#/$defs/Tool_ue_asset_get"
+        },
+        "ue_asset_dependencies": {
+          "$ref": "#/$defs/Tool_ue_asset_dependencies"
+        },
+        "ue_asset_referencers": {
+          "$ref": "#/$defs/Tool_ue_asset_referencers"
+        },
+        "ue_asset_tags_index": {
+          "$ref": "#/$defs/Tool_ue_asset_tags_index"
+        },
+        "ue_class_schema": {
+          "$ref": "#/$defs/Tool_ue_class_schema"
+        },
+        "ue_object_inspect": {
+          "$ref": "#/$defs/Tool_ue_object_inspect"
+        },
+        "ue_object_set": {
+          "$ref": "#/$defs/Tool_ue_object_set"
+        },
+        "ue_object_call": {
+          "$ref": "#/$defs/Tool_ue_object_call"
+        },
+        "ue_world_list": {
+          "$ref": "#/$defs/Tool_ue_world_list"
+        },
+        "ue_actor_search": {
+          "$ref": "#/$defs/Tool_ue_actor_search"
+        },
+        "ue_selection_get": {
+          "$ref": "#/$defs/Tool_ue_selection_get"
+        },
+        "ue_bp_list": {
+          "$ref": "#/$defs/Tool_ue_bp_list"
+        },
+        "ue_bp_graph_list": {
+          "$ref": "#/$defs/Tool_ue_bp_graph_list"
+        },
+        "ue_bp_graph_get": {
+          "$ref": "#/$defs/Tool_ue_bp_graph_get"
+        },
+        "ue_bp_function_summary": {
+          "$ref": "#/$defs/Tool_ue_bp_function_summary"
+        },
+        "ue_bp_find_calls": {
+          "$ref": "#/$defs/Tool_ue_bp_find_calls"
+        },
+        "ue_bp_find_property_access": {
+          "$ref": "#/$defs/Tool_ue_bp_find_property_access"
+        },
+        "ue_mat_params_get": {
+          "$ref": "#/$defs/Tool_ue_mat_params_get"
+        },
+        "ue_mat_graph_get": {
+          "$ref": "#/$defs/Tool_ue_mat_graph_get"
+        },
+        "ue_mat_find_param_usage": {
+          "$ref": "#/$defs/Tool_ue_mat_find_param_usage"
+        },
+        "unlua_lua_search": {
+          "$ref": "#/$defs/Tool_unlua_lua_search"
+        },
+        "unlua_module_graph": {
+          "$ref": "#/$defs/Tool_unlua_module_graph"
+        },
+        "unlua_ue_api_usage": {
+          "$ref": "#/$defs/Tool_unlua_ue_api_usage"
+        },
+        "unlua_loaded_modules_list": {
+          "$ref": "#/$defs/Tool_unlua_loaded_modules_list"
+        },
+        "unlua_trace_binding": {
+          "$ref": "#/$defs/Tool_unlua_trace_binding"
+        },
+        "unlua_dump_object_view": {
+          "$ref": "#/$defs/Tool_unlua_dump_object_view"
+        },
+        "ue_snapshot_build": {
+          "$ref": "#/$defs/Tool_ue_snapshot_build"
+        },
+        "ue_snapshot_list": {
+          "$ref": "#/$defs/Tool_ue_snapshot_list"
+        },
+        "ue_snapshot_query": {
+          "$ref": "#/$defs/Tool_ue_snapshot_query"
+        },
+        "ue_create_folder": {
+          "$ref": "#/$defs/Tool_ue_create_folder"
+        },
+        "ue_create_asset": {
+          "$ref": "#/$defs/Tool_ue_create_asset"
+        },
+        "ue_duplicate_asset": {
+          "$ref": "#/$defs/Tool_ue_duplicate_asset"
+        },
+        "ue_rename_asset": {
+          "$ref": "#/$defs/Tool_ue_rename_asset"
+        },
+        "ue_move_asset": {
+          "$ref": "#/$defs/Tool_ue_move_asset"
+        },
+        "ue_delete_asset": {
+          "$ref": "#/$defs/Tool_ue_delete_asset"
+        },
+        "ue_save_asset": {
+          "$ref": "#/$defs/Tool_ue_save_asset"
+        },
+        "ue_fix_redirectors": {
+          "$ref": "#/$defs/Tool_ue_fix_redirectors"
+        },
+        "ue_get_blueprint_edit_schema": {
+          "$ref": "#/$defs/Tool_ue_get_blueprint_edit_schema"
+        },
+        "ue_get_blueprint_defaults": {
+          "$ref": "#/$defs/Tool_ue_get_blueprint_defaults"
+        },
+        "ue_set_blueprint_defaults": {
+          "$ref": "#/$defs/Tool_ue_set_blueprint_defaults"
+        },
+        "ue_set_blueprint_component_defaults": {
+          "$ref": "#/$defs/Tool_ue_set_blueprint_component_defaults"
+        },
+        "ue_compile_blueprint": {
+          "$ref": "#/$defs/Tool_ue_compile_blueprint"
+        },
+        "ue_get_asset_create_schema": {
+          "$ref": "#/$defs/Tool_ue_get_asset_create_schema"
+        },
+        "ue_undo": {
+          "$ref": "#/$defs/Tool_ue_undo"
+        },
+        "ue_redo": {
+          "$ref": "#/$defs/Tool_ue_redo"
+        },
+        "ue_get_datatable_schema": {
+          "$ref": "#/$defs/Tool_ue_get_datatable_schema"
+        },
+        "ue_get_datatable_rows": {
+          "$ref": "#/$defs/Tool_ue_get_datatable_rows"
+        },
+        "ue_list_datatable_row_names": {
+          "$ref": "#/$defs/Tool_ue_list_datatable_row_names"
+        },
+        "ue_create_datatable": {
+          "$ref": "#/$defs/Tool_ue_create_datatable"
+        },
+        "ue_validate_datatable_rows": {
+          "$ref": "#/$defs/Tool_ue_validate_datatable_rows"
+        },
+        "ue_upsert_datatable_rows": {
+          "$ref": "#/$defs/Tool_ue_upsert_datatable_rows"
+        },
+        "ue_delete_datatable_rows": {
+          "$ref": "#/$defs/Tool_ue_delete_datatable_rows"
+        },
+        "ue_replace_datatable_rows": {
+          "$ref": "#/$defs/Tool_ue_replace_datatable_rows"
+        },
+        "ue_rename_datatable_row": {
+          "$ref": "#/$defs/Tool_ue_rename_datatable_row"
+        },
+        "ue_save_datatable": {
+          "$ref": "#/$defs/Tool_ue_save_datatable"
+        },
+        "ue_get_dataasset_schema": {
+          "$ref": "#/$defs/Tool_ue_get_dataasset_schema"
+        },
+        "ue_get_dataasset_payload": {
+          "$ref": "#/$defs/Tool_ue_get_dataasset_payload"
+        },
+        "ue_create_dataasset": {
+          "$ref": "#/$defs/Tool_ue_create_dataasset"
+        },
+        "ue_patch_dataasset_fields": {
+          "$ref": "#/$defs/Tool_ue_patch_dataasset_fields"
+        },
+        "ue_replace_dataasset_payload": {
+          "$ref": "#/$defs/Tool_ue_replace_dataasset_payload"
+        },
+        "ue_save_dataasset": {
+          "$ref": "#/$defs/Tool_ue_save_dataasset"
+        },
+        "ue_get_dataasset_collection_schema": {
+          "$ref": "#/$defs/Tool_ue_get_dataasset_collection_schema"
+        },
+        "ue_get_dataasset_collection_rows": {
+          "$ref": "#/$defs/Tool_ue_get_dataasset_collection_rows"
+        },
+        "ue_upsert_dataasset_collection_rows": {
+          "$ref": "#/$defs/Tool_ue_upsert_dataasset_collection_rows"
+        },
+        "ue_replace_dataasset_collection_rows": {
+          "$ref": "#/$defs/Tool_ue_replace_dataasset_collection_rows"
+        },
+        "ue_delete_dataasset_collection_rows": {
+          "$ref": "#/$defs/Tool_ue_delete_dataasset_collection_rows"
+        },
+        "ue_validate_references": {
+          "$ref": "#/$defs/Tool_ue_validate_references"
+        },
+        "ue_validate_naming": {
+          "$ref": "#/$defs/Tool_ue_validate_naming"
+        },
+        "ue_validate_world_rules": {
+          "$ref": "#/$defs/Tool_ue_validate_world_rules"
+        },
+        "ue_evaluate_goal": {
+          "$ref": "#/$defs/Tool_ue_evaluate_goal"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Definitions": {
+      "type": "object",
+      "required": [
+        "envelope",
+        "object_id",
+        "pagination",
+        "resource_ref",
+        "error",
+        "value",
+        "property",
+        "function",
+        "graph"
+      ],
+      "properties": {
+        "envelope": {
+          "$ref": "#/$defs/Envelope"
+        },
+        "object_id": {
+          "$ref": "#/$defs/ObjectId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/Pagination"
+        },
+        "resource_ref": {
+          "$ref": "#/$defs/ResourceRef"
+        },
+        "error": {
+          "$ref": "#/$defs/Error"
+        },
+        "value": {
+          "$ref": "#/$defs/Value"
+        },
+        "property": {
+          "$ref": "#/$defs/PropertyDesc"
+        },
+        "function": {
+          "$ref": "#/$defs/FunctionDesc"
+        },
+        "graph": {
+          "$ref": "#/$defs/GraphData"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Envelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "capabilities",
+        "warnings",
+        "editor_only"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Enabled providers/capabilities on this server, e.g. ['L0.assets','L1.reflection','L2.blueprints']"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "editor_only": {
+          "type": "boolean",
+          "description": "If true, this tool/result is only valid in Editor and may degrade in cooked/shipping."
+        },
+        "error": {
+          "$ref": "#/$defs/Error"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_ARGUMENT",
+            "NOT_FOUND",
+            "NOT_AVAILABLE",
+            "EDITOR_ONLY",
+            "PERMISSION_DENIED",
+            "TOO_LARGE",
+            "INTERNAL"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "ResourceRef": {
+      "type": "object",
+      "required": [
+        "resource_uri"
+      ],
+      "properties": {
+        "resource_uri": {
+          "type": "string",
+          "description": "Opaque URI that can be fetched via MCP resources/read."
+        },
+        "content_type": {
+          "type": "string",
+          "examples": [
+            "application/json"
+          ]
+        },
+        "approx_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 50
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "WorldSelector": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "enum": [
+            "Editor",
+            "PIE",
+            "Game"
+          ],
+          "description": "Where to resolve runtime objects."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObjectId": {
+      "type": "object",
+      "description": "Stable object identifier. Provide at least one of soft_path/object_path/actor_guid.",
+      "properties": {
+        "soft_path": {
+          "type": "string",
+          "examples": [
+            "/Game/Foo/BP_Bar.BP_Bar_C"
+          ]
+        },
+        "object_path": {
+          "type": "string",
+          "examples": [
+            "/Game/Maps/Map.Map:PersistentLevel.MyActor_2"
+          ]
+        },
+        "actor_guid": {
+          "type": "string",
+          "examples": [
+            "{D0E3B9A5-0F3E-4C64-9E0F-7F3D2C0E4A11}"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional hint (Actor name, etc.)."
+        },
+        "world": {
+          "type": "string",
+          "enum": [
+            "Editor",
+            "PIE",
+            "Game"
+          ]
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "soft_path"
+          ]
+        },
+        {
+          "required": [
+            "object_path"
+          ]
+        },
+        {
+          "required": [
+            "actor_guid"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "Value": {
+      "description": "Typed value encoding. For complex types, prefer structured JSON and include type tags. (Discriminated union by `type`.)",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ValueNull"
+        },
+        {
+          "$ref": "#/$defs/ValueBool"
+        },
+        {
+          "$ref": "#/$defs/ValueInt"
+        },
+        {
+          "$ref": "#/$defs/ValueFloat"
+        },
+        {
+          "$ref": "#/$defs/ValueString"
+        },
+        {
+          "$ref": "#/$defs/ValueName"
+        },
+        {
+          "$ref": "#/$defs/ValueText"
+        },
+        {
+          "$ref": "#/$defs/ValueEnum"
+        },
+        {
+          "$ref": "#/$defs/ValueStruct"
+        },
+        {
+          "$ref": "#/$defs/ValueObjectRef"
+        },
+        {
+          "$ref": "#/$defs/ValueSoftObjectRef"
+        },
+        {
+          "$ref": "#/$defs/ValueArray"
+        },
+        {
+          "$ref": "#/$defs/ValueMap"
+        },
+        {
+          "$ref": "#/$defs/ValueSet"
+        },
+        {
+          "$ref": "#/$defs/ValueBytes"
+        }
+      ]
+    },
+    "PropertyDesc": {
+      "type": "object",
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "description": "Human-readable UE type string (e.g. float, TArray<int>, UObject*)."
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "FunctionDesc": {
+      "type": "object",
+      "required": [
+        "name",
+        "params",
+        "returns"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "in",
+                  "out",
+                  "inout"
+                ],
+                "default": "in"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "returns": {
+          "type": "string"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "GraphData": {
+      "type": "object",
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "description": "Node class/type (e.g. K2Node_CallFunction)."
+              },
+              "title": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "pos": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "pins": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "direction"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "input",
+                        "output"
+                      ]
+                    },
+                    "pin_type": {
+                      "type": "string"
+                    },
+                    "default_value": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "attributes": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "from_pin",
+              "to_pin"
+            ],
+            "properties": {
+              "from_pin": {
+                "type": "string"
+              },
+              "to_pin": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToolBase": {
+      "type": "object",
+      "required": [
+        "input",
+        "output"
+      ],
+      "properties": {
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Tool_ue_ping": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "engine_version",
+                "project_name",
+                "session_id"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "engine_version": {
+                  "type": "string"
+                },
+                "project_name": {
+                  "type": "string"
+                },
+                "session_id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_capabilities": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "providers"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "providers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "version",
+                      "editor_only"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "editor_only": {
+                        "type": "boolean"
+                      },
+                      "limits": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_settings_get": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "settings"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "settings": {
+                  "type": "object",
+                  "required": [
+                    "read_only",
+                    "max_result_bytes",
+                    "max_items",
+                    "bind_host",
+                    "port"
+                  ],
+                  "properties": {
+                    "read_only": {
+                      "type": "boolean"
+                    },
+                    "max_result_bytes": {
+                      "type": "integer",
+                      "minimum": 1024
+                    },
+                    "max_items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "bind_host": {
+                      "type": "string",
+                      "default": "127.0.0.1"
+                    },
+                    "port": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 65535
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_settings_set": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "patch"
+              ],
+              "properties": {
+                "patch": {
+                  "type": "object",
+                  "properties": {
+                    "read_only": {
+                      "type": "boolean"
+                    },
+                    "max_result_bytes": {
+                      "type": "integer",
+                      "minimum": 1024
+                    },
+                    "max_items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "$ref": "#/$defs/Tool_ue_settings_get/allOf/1/properties/output"
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_log_tail": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "lines": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "channels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "lines"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_asset_search": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "path_prefix": {
+                  "type": "string"
+                },
+                "class": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "tags_query": {
+                  "type": "object",
+                  "description": "Simple tag query: all keys must match exactly. Advanced query can be added later.",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000,
+                  "default": 50
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "asset_path",
+                      "asset_class",
+                      "package_name"
+                    ],
+                    "properties": {
+                      "asset_path": {
+                        "type": "string"
+                      },
+                      "asset_class": {
+                        "type": "string"
+                      },
+                      "package_name": {
+                        "type": "string"
+                      },
+                      "tags": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "items"
+                  ]
+                },
+                {
+                  "required": [
+                    "resource"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_asset_get": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_path"
+              ],
+              "properties": {
+                "asset_path": {
+                  "type": "string"
+                },
+                "include_tags": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "asset"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "asset": {
+                  "type": "object",
+                  "required": [
+                    "asset_path",
+                    "asset_class",
+                    "package_name",
+                    "exists_on_disk"
+                  ],
+                  "properties": {
+                    "asset_path": {
+                      "type": "string"
+                    },
+                    "asset_class": {
+                      "type": "string"
+                    },
+                    "package_name": {
+                      "type": "string"
+                    },
+                    "exists_on_disk": {
+                      "type": "boolean"
+                    },
+                    "is_redirector": {
+                      "type": "boolean"
+                    },
+                    "tags": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_asset_dependencies": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_path"
+              ],
+              "properties": {
+                "asset_path": {
+                  "type": "string"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "in",
+                    "out"
+                  ],
+                  "default": "out"
+                },
+                "kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "hard",
+                      "soft"
+                    ]
+                  },
+                  "default": [
+                    "hard",
+                    "soft"
+                  ]
+                },
+                "depth": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10,
+                  "default": 1
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "nodes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "asset_path",
+                      "asset_class"
+                    ],
+                    "properties": {
+                      "asset_path": {
+                        "type": "string"
+                      },
+                      "asset_class": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "edges": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to",
+                      "kind"
+                    ],
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "hard",
+                          "soft"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "resource"
+                  ]
+                },
+                {
+                  "required": [
+                    "nodes",
+                    "edges"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_asset_referencers": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_path"
+              ],
+              "properties": {
+                "asset_path": {
+                  "type": "string"
+                },
+                "kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "hard",
+                      "soft"
+                    ]
+                  },
+                  "default": [
+                    "hard",
+                    "soft"
+                  ]
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "items"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "asset_path",
+                      "asset_class"
+                    ],
+                    "properties": {
+                      "asset_path": {
+                        "type": "string"
+                      },
+                      "asset_class": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_asset_tags_index": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "path_prefix": {
+                  "type": "string"
+                },
+                "class": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "tag_keys"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "tag_keys": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_class_schema": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "class_name"
+              ],
+              "properties": {
+                "class_name": {
+                  "type": "string"
+                },
+                "include_inherited": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "include_functions": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "include_metadata": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "class_name",
+                "properties",
+                "functions"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "class_name": {
+                  "type": "string"
+                },
+                "properties": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/PropertyDesc"
+                  }
+                },
+                "functions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/FunctionDesc"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_object_inspect": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "object_id"
+              ],
+              "properties": {
+                "object_id": {
+                  "$ref": "#/$defs/ObjectId"
+                },
+                "depth": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8,
+                  "default": 1
+                },
+                "include_values": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "include_functions": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "property_filter": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "object": {
+                  "type": "object",
+                  "required": [
+                    "class",
+                    "ids",
+                    "properties"
+                  ],
+                  "properties": {
+                    "class": {
+                      "type": "string"
+                    },
+                    "ids": {
+                      "$ref": "#/$defs/ObjectId"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/Value"
+                      }
+                    },
+                    "functions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/FunctionDesc"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "object"
+                  ]
+                },
+                {
+                  "required": [
+                    "resource"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_object_set": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "object_id",
+                "changes"
+              ],
+              "properties": {
+                "object_id": {
+                  "$ref": "#/$defs/ObjectId"
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "property",
+                      "value"
+                    ],
+                    "properties": {
+                      "property": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/Value"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "applied",
+                "failed"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "applied": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "failed": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "property",
+                      "reason"
+                    ],
+                    "properties": {
+                      "property": {
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_object_call": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "object_id",
+                "function"
+              ],
+              "properties": {
+                "object_id": {
+                  "$ref": "#/$defs/ObjectId"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "return_value": {
+                  "$ref": "#/$defs/Value"
+                },
+                "out_params": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/Value"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_world_list": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "worlds"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "worlds": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "type",
+                      "is_playing"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Editor",
+                          "PIE",
+                          "Game"
+                        ]
+                      },
+                      "is_playing": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_actor_search": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "world": {
+                  "type": "string",
+                  "enum": [
+                    "Editor",
+                    "PIE",
+                    "Game"
+                  ],
+                  "default": "Editor"
+                },
+                "class": {
+                  "type": "string"
+                },
+                "name_contains": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2000,
+                  "default": 100
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "actors"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "actors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "object_path",
+                      "name",
+                      "class"
+                    ],
+                    "properties": {
+                      "object_path": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "class": {
+                        "type": "string"
+                      },
+                      "level": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_selection_get": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "selected"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "selected": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "object_path",
+                      "class"
+                    ],
+                    "properties": {
+                      "object_path": {
+                        "type": "string"
+                      },
+                      "class": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_bp_list": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "path_prefix": {
+                  "type": "string"
+                },
+                "class": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "bps"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "bps": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "bp_path"
+                    ],
+                    "properties": {
+                      "bp_path": {
+                        "type": "string"
+                      },
+                      "generated_class": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_bp_graph_list": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "bp_path"
+              ],
+              "properties": {
+                "bp_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "graphs"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "graphs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "type",
+                      "node_count"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "node_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_bp_graph_get": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "bp_path",
+                "graph_name"
+              ],
+              "properties": {
+                "bp_path": {
+                  "type": "string"
+                },
+                "graph_name": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string",
+                  "enum": [
+                    "compact",
+                    "full"
+                  ],
+                  "default": "compact"
+                },
+                "node_filter": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "const": true,
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                },
+                "graph": {
+                  "$ref": "#/$defs/GraphData"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "resource"
+                  ]
+                },
+                {
+                  "required": [
+                    "graph"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_bp_function_summary": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "bp_path",
+                "function_name"
+              ],
+              "properties": {
+                "bp_path": {
+                  "type": "string"
+                },
+                "function_name": {
+                  "type": "string"
+                },
+                "verbosity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "med",
+                    "high"
+                  ],
+                  "default": "med"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "summary"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "summary": {
+                  "type": "object",
+                  "required": [
+                    "steps",
+                    "calls",
+                    "reads",
+                    "writes",
+                    "branches"
+                  ],
+                  "properties": {
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "calls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reads": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "writes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_bp_find_calls": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "function_name"
+              ],
+              "properties": {
+                "function_name": {
+                  "type": "string"
+                },
+                "path_prefix": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "bp_path",
+                      "graph",
+                      "node_id"
+                    ],
+                    "properties": {
+                      "bp_path": {
+                        "type": "string"
+                      },
+                      "graph": {
+                        "type": "string"
+                      },
+                      "node_id": {
+                        "type": "string"
+                      },
+                      "context_snippet": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "hits"
+                  ]
+                },
+                {
+                  "required": [
+                    "resource"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_bp_find_property_access": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "class_name",
+                "property_name"
+              ],
+              "properties": {
+                "class_name": {
+                  "type": "string"
+                },
+                "property_name": {
+                  "type": "string"
+                },
+                "access": {
+                  "type": "string",
+                  "enum": [
+                    "read",
+                    "write",
+                    "both"
+                  ],
+                  "default": "both"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "hits"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "bp_path",
+                      "graph",
+                      "node_id",
+                      "access"
+                    ],
+                    "properties": {
+                      "bp_path": {
+                        "type": "string"
+                      },
+                      "graph": {
+                        "type": "string"
+                      },
+                      "node_id": {
+                        "type": "string"
+                      },
+                      "access": {
+                        "type": "string",
+                        "enum": [
+                          "read",
+                          "write"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_mat_params_get": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "material_path"
+              ],
+              "properties": {
+                "material_path": {
+                  "type": "string"
+                },
+                "include_overrides": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "params"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "params": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "scalar",
+                          "vector",
+                          "texture",
+                          "static_switch",
+                          "runtime_virtual_texture",
+                          "font"
+                        ]
+                      },
+                      "value": {
+                        "$ref": "#/$defs/Value"
+                      },
+                      "overridden": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_mat_graph_get": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "material_path"
+              ],
+              "properties": {
+                "material_path": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string",
+                  "enum": [
+                    "compact",
+                    "full"
+                  ],
+                  "default": "compact"
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "const": true,
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                },
+                "graph": {
+                  "$ref": "#/$defs/GraphData"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "resource"
+                  ]
+                },
+                {
+                  "required": [
+                    "graph"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_mat_find_param_usage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "param_name"
+              ],
+              "properties": {
+                "param_name": {
+                  "type": "string"
+                },
+                "path_prefix": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "hits"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "material_path",
+                      "kind"
+                    ],
+                    "properties": {
+                      "material_path": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "base",
+                          "instance"
+                        ]
+                      },
+                      "default_value": {
+                        "$ref": "#/$defs/Value"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_unlua_lua_search": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "query"
+              ],
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "path_prefix": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "file",
+                      "line",
+                      "snippet"
+                    ],
+                    "properties": {
+                      "file": {
+                        "type": "string"
+                      },
+                      "line": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "snippet": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "hits"
+                  ]
+                },
+                {
+                  "required": [
+                    "resource"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_unlua_module_graph": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "entry_module": {
+                  "type": "string"
+                },
+                "depth": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10,
+                  "default": 2
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20000,
+                  "default": 500
+                },
+                "return_as_resource": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "nodes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "edges": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "resource"
+                  ]
+                },
+                {
+                  "required": [
+                    "nodes",
+                    "edges"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Tool_unlua_ue_api_usage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "api_pattern": {
+                  "type": "string",
+                  "description": "Substring/regex-like pattern for UE API usage markers."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "default": 200
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "hits"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "file",
+                      "line",
+                      "snippet"
+                    ],
+                    "properties": {
+                      "file": {
+                        "type": "string"
+                      },
+                      "line": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "snippet": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_unlua_loaded_modules_list": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "world": {
+                  "type": "string",
+                  "enum": [
+                    "Editor",
+                    "PIE",
+                    "Game"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "modules"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "modules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "loaded_at": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_unlua_trace_binding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "object_id"
+              ],
+              "properties": {
+                "object_id": {
+                  "$ref": "#/$defs/ObjectId"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "binding"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "binding": {
+                  "type": "object",
+                  "required": [
+                    "module",
+                    "table",
+                    "lifecycle_handlers",
+                    "delegates"
+                  ],
+                  "properties": {
+                    "module": {
+                      "type": "string"
+                    },
+                    "table": {
+                      "type": "string"
+                    },
+                    "lifecycle_handlers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "delegates": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_unlua_dump_object_view": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "object_id"
+              ],
+              "properties": {
+                "object_id": {
+                  "$ref": "#/$defs/ObjectId"
+                },
+                "include_ue": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "include_lua": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "resource"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_snapshot_build": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "scope",
+                "include"
+              ],
+              "properties": {
+                "scope": {
+                  "type": "object",
+                  "properties": {
+                    "paths": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "classes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "include": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "L0",
+                      "L1",
+                      "L2",
+                      "bp_summary",
+                      "mat_params"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "snapshot_id",
+                "stats"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "snapshot_id": {
+                  "type": "string"
+                },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_snapshot_list": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "snapshots"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "snapshots": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "created_at",
+                      "size_bytes"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "size_bytes": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "scope": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_snapshot_query": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "snapshot_id",
+                "query"
+              ],
+              "properties": {
+                "snapshot_id": {
+                  "type": "string"
+                },
+                "query": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "resource"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "resource": {
+                  "$ref": "#/$defs/ResourceRef"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "ValueNull": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "null"
+        },
+        "value": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueBool": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "bool"
+        },
+        "value": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueInt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "int"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueFloat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "float"
+        },
+        "value": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueString": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueName": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "name"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueText": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueEnum": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "enum"
+        },
+        "value": {
+          "type": "string"
+        },
+        "object": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "class": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "class"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueStruct": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "struct"
+        },
+        "struct_type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "type",
+        "struct_type",
+        "value"
+      ]
+    },
+    "ValueObjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "object_ref"
+        },
+        "object": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "class": {
+              "type": "string"
+            },
+            "path_name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path_name"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "object"
+      ]
+    },
+    "ValueSoftObjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "soft_object_ref"
+        },
+        "object": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "class": {
+              "type": "string"
+            },
+            "soft_path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "soft_path"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "object"
+      ]
+    },
+    "ValueArray": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "array"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Value"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "set"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Value"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueMapEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Value"
+        },
+        "v": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "required": [
+        "k",
+        "v"
+      ]
+    },
+    "ValueMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "map"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ValueMapEntry"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "ValueBytes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "bytes"
+        },
+        "value": {
+          "type": "string",
+          "description": "Base64-encoded bytes."
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "Tool_ue_create_folder": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "folder_path"
+              ],
+              "properties": {
+                "folder_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "created"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "created": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_create_asset": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_type",
+                "package_path",
+                "asset_name"
+              ],
+              "properties": {
+                "asset_type": {
+                  "type": "string",
+                  "enum": [
+                    "BlueprintClass",
+                    "DataAsset",
+                    "MaterialInstance"
+                  ]
+                },
+                "package_path": {
+                  "type": "string"
+                },
+                "asset_name": {
+                  "type": "string"
+                },
+                "init": {
+                  "type": "object"
+                },
+                "dry_run": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "asset_path"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "asset_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_duplicate_asset": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "source_asset",
+                "target_package_path",
+                "target_asset_name"
+              ],
+              "properties": {
+                "source_asset": {
+                  "type": "string"
+                },
+                "target_package_path": {
+                  "type": "string"
+                },
+                "target_asset_name": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "asset_path"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "asset_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_rename_asset": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_path",
+                "new_name"
+              ],
+              "properties": {
+                "asset_path": {
+                  "type": "string"
+                },
+                "new_name": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "new_asset_path"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "new_asset_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_move_asset": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_path",
+                "target_package_path"
+              ],
+              "properties": {
+                "asset_path": {
+                  "type": "string"
+                },
+                "target_package_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "new_asset_path"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "new_asset_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_delete_asset": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_path"
+              ],
+              "properties": {
+                "asset_path": {
+                  "type": "string"
+                },
+                "preview_dependencies": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "force_delete": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "deleted"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "deleted": {
+                  "type": "boolean"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_save_asset": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "asset_paths"
+              ],
+              "properties": {
+                "asset_paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "saved"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "saved": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_fix_redirectors": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "folder_path"
+              ],
+              "properties": {
+                "folder_path": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "fixed_count"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "fixed_count": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_blueprint_edit_schema": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "blueprint_asset"
+              ],
+              "properties": {
+                "blueprint_asset": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "schema"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_blueprint_defaults": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "blueprint_asset"
+              ],
+              "properties": {
+                "blueprint_asset": {
+                  "type": "string"
+                },
+                "include_components": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "defaults"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "defaults": {
+                  "type": "object"
+                },
+                "components": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_set_blueprint_defaults": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "blueprint_asset",
+                "patch"
+              ],
+              "properties": {
+                "blueprint_asset": {
+                  "type": "string"
+                },
+                "patch": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "property_path",
+                      "value"
+                    ],
+                    "properties": {
+                      "property_path": {
+                        "type": "string"
+                      },
+                      "value": {}
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "compile": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "save": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "dry_run": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "applied"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "applied": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_set_blueprint_component_defaults": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "blueprint_asset",
+                "component_name",
+                "patch"
+              ],
+              "properties": {
+                "blueprint_asset": {
+                  "type": "string"
+                },
+                "component_name": {
+                  "type": "string"
+                },
+                "patch": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "property_path",
+                      "value"
+                    ],
+                    "properties": {
+                      "property_path": {
+                        "type": "string"
+                      },
+                      "value": {}
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "compile": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "dry_run": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "applied"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "applied": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_compile_blueprint": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": [
+                "blueprint_asset"
+              ],
+              "properties": {
+                "blueprint_asset": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "success"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "success": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_asset_create_schema": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "asset_type": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "schema"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_undo": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "default": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "undone"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "undone": {
+                  "type": "integer"
+                },
+                "descriptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_redo": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ToolBase"
+        },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "default": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "capabilities",
+                "warnings",
+                "editor_only",
+                "redone"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "editor_only": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "$ref": "#/$defs/Error"
+                },
+                "redone": {
+                  "type": "integer"
+                },
+                "descriptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_datatable_schema": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": {
+                  "type": "string",
+                  "description": "Full asset path of the DataTable, e.g. /Game/Data/DT_Weapons.DT_Weapons"
+                }
+              },
+              "required": ["datatable_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_datatable_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string", "description": "Full asset path of the DataTable" },
+                "row_names": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Optional. If omitted, returns all rows."
+                }
+              },
+              "required": ["datatable_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_list_datatable_row_names": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string", "description": "Full asset path of the DataTable" }
+              },
+              "required": ["datatable_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_create_datatable": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "package_path": { "type": "string", "description": "Package path, e.g. /Game/Data" },
+                "asset_name": { "type": "string", "description": "Asset name, e.g. DT_Weapons" },
+                "row_struct": { "type": "string", "description": "Row struct path, e.g. /Script/MyGame.WeaponRow" }
+              },
+              "required": ["package_path", "asset_name", "row_struct"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_validate_datatable_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string" },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "row_name": { "type": "string" },
+                      "data": { "type": "object" }
+                    },
+                    "required": ["row_name", "data"]
+                  }
+                }
+              },
+              "required": ["datatable_asset", "rows"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_upsert_datatable_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string" },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "row_name": { "type": "string" },
+                      "data": { "type": "object" }
+                    },
+                    "required": ["row_name", "data"]
+                  }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["datatable_asset", "rows"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_delete_datatable_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string" },
+                "row_names": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["datatable_asset", "row_names"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_replace_datatable_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string" },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "row_name": { "type": "string" },
+                      "data": { "type": "object" }
+                    },
+                    "required": ["row_name", "data"]
+                  }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["datatable_asset", "rows"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_rename_datatable_row": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string" },
+                "old_row_name": { "type": "string" },
+                "new_row_name": { "type": "string" },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["datatable_asset", "old_row_name", "new_row_name"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_save_datatable": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "datatable_asset": { "type": "string" }
+              },
+              "required": ["datatable_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_dataasset_schema": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string", "description": "Full asset path of the DataAsset" }
+              },
+              "required": ["dataasset_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_dataasset_payload": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" }
+              },
+              "required": ["dataasset_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_create_dataasset": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "package_path": { "type": "string" },
+                "asset_name": { "type": "string" },
+                "asset_class": { "type": "string" }
+              },
+              "required": ["package_path", "asset_name", "asset_class"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_patch_dataasset_fields": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" },
+                "patch": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "property_path": { "type": "string" },
+                      "value": {}
+                    },
+                    "required": ["property_path", "value"]
+                  }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["dataasset_asset", "patch"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_replace_dataasset_payload": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" },
+                "payload": { "type": "object" },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["dataasset_asset", "payload"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_save_dataasset": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" }
+              },
+              "required": ["dataasset_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_dataasset_collection_schema": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" }
+              },
+              "required": ["dataasset_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_get_dataasset_collection_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" }
+              },
+              "required": ["dataasset_asset"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_upsert_dataasset_collection_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": { "type": "string" },
+                      "data": { "type": "object" }
+                    },
+                    "required": ["key", "data"]
+                  }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["dataasset_asset", "rows"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_replace_dataasset_collection_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": { "type": "string" },
+                      "data": { "type": "object" }
+                    },
+                    "required": ["key", "data"]
+                  }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["dataasset_asset", "rows"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_delete_dataasset_collection_rows": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "dataasset_asset": { "type": "string" },
+                "keys": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "dry_run": { "type": "boolean", "default": false },
+                "save": { "type": "boolean", "default": false }
+              },
+              "required": ["dataasset_asset", "keys"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_validate_references": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "asset_path": {
+                  "type": "string",
+                  "description": "Single asset path or directory path (ending with /). Required."
+                },
+                "return_as_resource": { "type": "boolean", "default": false }
+              },
+              "required": ["asset_path"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_validate_naming": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "asset_path": {
+                  "type": "string",
+                  "description": "Single asset path or directory path."
+                },
+                "folder": {
+                  "type": "string",
+                  "description": "Directory to scan (e.g. /Game/Blueprints/)."
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "Text pattern to filter asset names."
+                },
+                "convention": {
+                  "type": "object",
+                  "description": "Override default prefix rules. Keys are class paths, values are expected prefixes.",
+                  "additionalProperties": { "type": "string" }
+                },
+                "return_as_resource": { "type": "boolean", "default": false }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_validate_world_rules": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "world": {
+                  "type": "string",
+                  "description": "World type (Editor, PIE, Game) or map name. Default: Editor.",
+                  "default": "Editor"
+                },
+                "rules": {
+                  "type": "array",
+                  "description": "Array of rule objects to check.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["all_actors_have_tag", "max_actor_count", "no_underground_actors", "no_hidden_with_collision"],
+                        "description": "Rule type to check."
+                      },
+                      "class": { "type": "string", "description": "Actor class filter (for all_actors_have_tag, max_actor_count)." },
+                      "tag": { "type": "string", "description": "Tag name (for all_actors_have_tag)." },
+                      "max": { "type": "integer", "description": "Maximum actor count (for max_actor_count)." },
+                      "min_z": { "type": "integer", "description": "Minimum Z coordinate (for no_underground_actors). Default: world KillZ." }
+                    },
+                    "required": ["type"]
+                  }
+                }
+              },
+              "required": ["rules"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "Tool_ue_evaluate_goal": {
+      "allOf": [
+        { "$ref": "#/$defs/ToolBase" },
+        {
+          "properties": {
+            "input": {
+              "type": "object",
+              "properties": {
+                "assertions": {
+                  "type": "array",
+                  "description": "Array of assertion objects to evaluate.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["asset_exists", "property_equals", "blueprint_compiles", "actor_count", "no_broken_references", "tag_exists_on"],
+                        "description": "Assertion type."
+                      },
+                      "path": { "type": "string", "description": "Asset path (for asset_exists, blueprint_compiles, no_broken_references)." },
+                      "actor": { "type": "string", "description": "Actor/object path (for property_equals, tag_exists_on)." },
+                      "property": { "type": "string", "description": "Property name (for property_equals)." },
+                      "expected": { "type": "string", "description": "Expected value as string (for property_equals)." },
+                      "class": { "type": "string", "description": "Actor class (for actor_count)." },
+                      "op": { "type": "string", "enum": [">=", "<=", "==", ">", "<", "!="], "default": ">=", "description": "Comparison operator (for actor_count)." },
+                      "value": { "type": "integer", "description": "Expected count (for actor_count)." },
+                      "tag": { "type": "string", "description": "Tag name (for tag_exists_on)." },
+                      "world": { "type": "string", "default": "Editor", "description": "World for actor-based assertions." }
+                    },
+                    "required": ["type"]
+                  }
+                }
+              },
+              "required": ["assertions"],
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

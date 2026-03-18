@@ -8,6 +8,7 @@ public class UE5MCP : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		PrivatePCHHeaderFile = "Public/UE5MCP.h";
+		bUseUnity = false;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {

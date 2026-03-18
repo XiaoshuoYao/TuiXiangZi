@@ -1,5 +1,6 @@
 #include "UI/PresetLevelSelectWidget.h"
 #include "UI/LevelSelectEntryData.h"
+#include "UI/MainMenuWidget.h"
 #include "Framework/SokobanGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
@@ -38,7 +39,15 @@ void UPresetLevelSelectWidget::SelectLevel(ULevelSelectEntryData* EntryData)
 {
     if (EntryData && EntryData->bIsUnlocked)
     {
+        // Clear previous selection
+        if (SelectedEntry)
+        {
+            SelectedEntry->bIsSelected = false;
+        }
+
         SelectedEntry = EntryData;
+        SelectedEntry->bIsSelected = true;
+        OnSelectionChanged.Broadcast();
     }
 }
 
@@ -58,8 +67,11 @@ void UPresetLevelSelectWidget::PlaySelectedLevel()
 
 void UPresetLevelSelectWidget::GoBack()
 {
-    // Find the parent MainMenuWidget and switch back to main panel
-    // Blueprint should call MainMenuWidget->ShowMainPanel() directly
-    // This is a convenience for Blueprint to override
     SelectedEntry = nullptr;
+
+    // Use UObject outer chain to find the owning MainMenuWidget
+    if (UMainMenuWidget* Menu = GetTypedOuter<UMainMenuWidget>())
+    {
+        Menu->ShowMainPanel();
+    }
 }

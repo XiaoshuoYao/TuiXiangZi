@@ -141,6 +141,12 @@ void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
     if (bIsMoving) return;
     if (!GridManagerRef) return;
 
+    // Block movement when pause menu or level complete menu is visible
+    if (ASokobanGameMode* GM = Cast<ASokobanGameMode>(GetWorld()->GetAuthGameMode()))
+    {
+        if (GM->IsPauseMenuVisible()) return;
+    }
+
     // Capture snapshot before attempting move (for undo)
     ASokobanGameState* GS = GetWorld()->GetGameState<ASokobanGameState>();
     if (GS && GridManagerRef)

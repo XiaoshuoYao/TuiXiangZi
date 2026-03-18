@@ -1,5 +1,6 @@
 #include "UI/CustomLevelSelectWidget.h"
 #include "UI/LevelSelectEntryData.h"
+#include "UI/MainMenuWidget.h"
 #include "Framework/SokobanGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
@@ -37,7 +38,15 @@ void UCustomLevelSelectWidget::SelectLevel(ULevelSelectEntryData* EntryData)
 {
     if (EntryData)
     {
+        // Clear previous selection
+        if (SelectedEntry)
+        {
+            SelectedEntry->bIsSelected = false;
+        }
+
         SelectedEntry = EntryData;
+        SelectedEntry->bIsSelected = true;
+        OnSelectionChanged.Broadcast();
     }
 }
 
@@ -58,4 +67,10 @@ void UCustomLevelSelectWidget::PlaySelectedLevel()
 void UCustomLevelSelectWidget::GoBack()
 {
     SelectedEntry = nullptr;
+
+    // Use UObject outer chain to find the owning MainMenuWidget
+    if (UMainMenuWidget* Menu = GetTypedOuter<UMainMenuWidget>())
+    {
+        Menu->ShowMainPanel();
+    }
 }

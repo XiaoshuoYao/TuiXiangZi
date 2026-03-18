@@ -8,7 +8,9 @@
 #include "Gameplay/Mechanisms/Door.h"
 #include "LevelData/LevelSerializer.h"
 #include "LevelData/LevelDataTypes.h"
+#include "UI/PauseMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Misc/Paths.h"
 #include "EngineUtils.h"
 
@@ -59,6 +61,20 @@ void ASokobanGameMode::BeginPlay()
     if (GridManagerRef)
     {
         GridManagerRef->OnPlayerEnteredGoal.AddUObject(this, &ASokobanGameMode::OnPlayerEnteredGoal);
+    }
+
+    // Ensure input mode is set to Game (in case we came from UI-only menu)
+    if (UWorld* W = GetWorld())
+    {
+        if (APlayerController* PC = W->GetFirstPlayerController())
+        {
+            FInputModeGameOnly InputMode;
+            PC->SetInputMode(InputMode);
+            PC->bShowMouseCursor = false;
+
+            // Bind ESC key to toggle pause menu
+            PC->InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASokobanGameMode::TogglePauseMenu);
+        }
     }
 
     // Check GameInstance for a selected level (from main menu)
@@ -271,6 +287,8 @@ void ASokobanGameMode::OnPlayerEnteredGoal(FIntPoint GoalPos)
         }
 
         OnLevelCompleted.Broadcast(Steps);
+
+        ShowLevelCompleteMenu(Steps);
     }
 }
 
@@ -338,3 +356,106 @@ void ASokobanGameMode::RequestUndo() { UndoLastMove(); }
 void ASokobanGameMode::RequestReset() { ResetCurrentLevel(); }
 void ASokobanGameMode::RequestNextLevel() { LoadNextLevel(); }
 void ASokobanGameMode::RequestReturnToMenu() { ReturnToMainMenu(); }
+
+// ===== Pause Menu =====
+
+void ASokobanGameMode::TogglePauseMenu()
+{
+    // If level is completed, ESC should not dismiss the menu
+    if (bPauseMenuVisible && IsLevelCompleted())
+    {
+        return;
+    }
+
+    if (bPauseMenuVisible)
+    {
+        HidePauseMenu();
+    }
+    else
+    {
+        ShowPauseMenu();
+    }
+}
+
+void ASokobanGameMode::ShowPauseMenu()
+{
+    if (bPauseMenuVisible) return;
+
+    UWorld* W = GetWorld();
+    if (!W) return;
+    APlayerController* PC = W->GetFirstPlayerController();
+    if (!PC) return;
+
+    if (!PauseMenuWidget && PauseMenuWidgetClass)
+    {
+        PauseMenuWidget = CreateWidget<UPauseMenuWidget>(PC, PauseMenuWidgetClass);
+    }
+
+    if (PauseMenuWidget)
+    {
+        PauseMenuWidget->SetTitleText(FText::FromString(TEXT("暂停")));
+        PauseMenuWidget->SetResumeButtonVisible(true);
+        PauseMenuWidget->SetNextLevelButtonVisible(false);
+        PauseMenuWidget->AddToViewport(100);
+        bPauseMenuVisible = true;
+        SetUIInputMode(true);
+    }
+}
+
+void ASokobanGameMode::HidePauseMenu()
+{
+    if (!bPauseMenuVisible) return;
+
+    if (PauseMenuWidget)
+    {
+        PauseMenuWidget->RemoveFromParent();
+    }
+    bPauseMenuVisible = false;
+    SetUIInputMode(false);
+}
+
+void ASokobanGameMode::ShowLevelCompleteMenu(int32 Steps)
+{
+    UWorld* W = GetWorld();
+    if (!W) return;
+    APlayerController* PC = W->GetFirstPlayerController();
+    if (!PC) return;
+
+    if (!PauseMenuWidget && PauseMenuWidgetClass)
+    {
+        PauseMenuWidget = CreateWidget<UPauseMenuWidget>(PC, PauseMenuWidgetClass);
+    }
+
+    if (PauseMenuWidget)
+    {
+        FString Title = FString::Printf(TEXT("通关！步数：%d"), Steps);
+        PauseMenuWidget->SetTitleText(FText::FromString(Title));
+        PauseMenuWidget->SetResumeButtonVisible(false);
+        PauseMenuWidget->SetNextLevelButtonVisible(true);
+        PauseMenuWidget->AddToViewport(100);
+        bPauseMenuVisible = true;
+        SetUIInputMode(true);
+    }
+}
+
+void ASokobanGameMode::SetUIInputMode(bool bUIMode)
+{
+    UWorld* W = GetWorld();
+    if (!W) return;
+    APlayerController* PC = W->GetFirstPlayerController();
+    if (!PC) return;
+
+    if (bUIMode)
+    {
+        FInputModeGameAndUI InputMode;
+        InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        PC->SetInputMode(InputMode);
+        PC->bShowMouseCursor = true;
+    }
+    else
+    {
+        FInputModeGameOnly InputMode;
+        PC->SetInputMode(InputMode);
+        PC->bShowMouseCursor = false;
+    }
+}
