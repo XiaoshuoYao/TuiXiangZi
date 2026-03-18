@@ -1,5 +1,6 @@
 #include "Gameplay/SokobanCharacter.h"
 #include "Grid/GridManager.h"
+#include "Framework/SokobanGameMode.h"
 #include "Framework/SokobanGameState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -7,15 +8,23 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Kismet/GameplayStatics.h"
-#include "Curves/CurveFloat.h"
+#include "Components/CapsuleComponent.h"
 
 ASokobanCharacter::ASokobanCharacter()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
 
-    // 禁用 CharacterMovement 自由移动
-    GetCharacterMovement()->MaxWalkSpeed = 0.0f;
-    GetCharacterMovement()->GravityScale = 0.0f;
+    // CMC 配置：不用重力，瞬间加速/刹车
+    UCharacterMovementComponent* CMC = GetCharacterMovement();
+    CMC->GravityScale = 0.0f;
+    CMC->MaxAcceleration = 999999.0f;
+    CMC->BrakingDecelerationWalking = 999999.0f;
+    CMC->bOrientRotationToMovement = false;
+
+    // 允许直接设置 Pawn 旋转，不被 Controller 覆盖
+    bUseControllerRotationYaw = false;
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationRoll = false;
 
     // 相机 SpringArm - 俯视角
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -30,17 +39,27 @@ ASokobanCharacter::ASokobanCharacter()
     // 相机
     TopDownCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
     TopDownCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-
-    // Timeline
-    MoveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("MoveTimeline"));
 }
 
 void ASokobanCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
+    // 强制设为行走模式，让 ABP_Manny 知道角色在地面上
+    GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
     // 查找 GridManager
     GridManagerRef = Cast<AGridManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AGridManager::StaticClass()));
+
+    if (GridManagerRef)
+    {
+        // 根据格子大小和移动时间计算行走速度
+        float CellSize = GridManagerRef->CellSize;
+        GetCharacterMovement()->MaxWalkSpeed = CellSize / FMath::Max(MoveDuration, 0.01f);
+
+        // 绑定 GridManager 广播
+        GridManagerRef->OnActorLogicalMoved.AddUObject(this, &ASokobanCharacter::OnActorLogicalMoved);
+    }
 
     // 添加 Enhanced Input Mapping Context
     if (APlayerController* PC = Cast<APlayerController>(Controller))
@@ -55,24 +74,42 @@ void ASokobanCharacter::BeginPlay()
         }
     }
 
-    // 设置 Timeline
-    if (MoveCurve)
+    // 在 BeginPlay 中绑定 InputAction（SetupPlayerInputComponent 时 BP 属性可能还未反序列化）
+    if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
     {
-        FOnTimelineFloat UpdateDelegate;
-        UpdateDelegate.BindUFunction(this, FName("OnMoveTimelineUpdate"));
-        MoveTimeline->AddInterpFloat(MoveCurve, UpdateDelegate);
-
-        FOnTimelineEvent FinishedDelegate;
-        FinishedDelegate.BindUFunction(this, FName("OnMoveTimelineFinished"));
-        MoveTimeline->SetTimelineFinishedFunc(FinishedDelegate);
-
-        MoveTimeline->SetPlayRate(1.0f / MoveDuration);
+        if (MoveUpAction)
+            EnhancedInput->BindAction(MoveUpAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveUp);
+        if (MoveDownAction)
+            EnhancedInput->BindAction(MoveDownAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveDown);
+        if (MoveLeftAction)
+            EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveLeft);
+        if (MoveRightAction)
+            EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveRight);
     }
+}
 
-    // 绑定 GridManager 广播
-    if (GridManagerRef)
+void ASokobanCharacter::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    if (!bIsMoving) return;
+
+    float Dist = FVector::DistXY(GetActorLocation(), MoveTargetLocation);
+    const float SnapThreshold = 5.0f;
+
+    if (Dist < SnapThreshold)
     {
-        GridManagerRef->OnActorLogicalMoved.AddUObject(this, &ASokobanCharacter::OnActorLogicalMoved);
+        // 到达：精确吸附到格子中心
+        FVector SnapPos = MoveTargetLocation;
+        SnapPos.Z = GetActorLocation().Z;
+        SetActorLocation(SnapPos);
+        bIsMoving = false;
+        GetCharacterMovement()->StopMovementImmediately();
+    }
+    else
+    {
+        // 驱动 CMC 向目标移动，ABP_Manny 自动获得速度和加速度
+        AddMovementInput(MoveDirection, 1.0f);
     }
 }
 
@@ -111,14 +148,32 @@ void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
         GS->PushSnapshot(GS->CaptureSnapshot(GridManagerRef));
     }
 
+    // 根据移动方向转身
+    {
+        float TargetYaw = 0.0f;
+        switch (Dir)
+        {
+        case EMoveDirection::Up:    TargetYaw = 0.0f;   break;
+        case EMoveDirection::Down:  TargetYaw = 180.0f; break;
+        case EMoveDirection::Left:  TargetYaw = -90.0f;  break;
+        case EMoveDirection::Right: TargetYaw = 90.0f;  break;
+        }
+        SetActorRotation(FRotator(0.0f, TargetYaw, 0.0f));
+    }
+
     // 尝试移动
     bool bSuccess = GridManagerRef->TryMoveActor(CurrentGridPos, Dir);
-    // 移动成功时 GridManager 会广播 OnActorLogicalMoved，角色在回调中执行 SmoothMoveTo
     if (bSuccess)
     {
         if (GS)
         {
             GS->IncrementSteps();
+        }
+        // Update box-on-plate visuals and broadcast step count
+        if (ASokobanGameMode* GM = Cast<ASokobanGameMode>(GetWorld()->GetAuthGameMode()))
+        {
+            GM->UpdateBoxOnPlateVisuals();
+            GM->OnStepCountChanged.Broadcast(GS ? GS->GetStepCount() : 0);
         }
     }
     else
@@ -128,70 +183,35 @@ void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
         {
             GS->PopSnapshot();
         }
-        // 可在此播放"撞墙"反馈（Phase 5）
     }
 }
 
 void ASokobanCharacter::SnapToGridPos(FIntPoint GridPos)
 {
     CurrentGridPos = GridPos;
+    if (!GridManagerRef)
+    {
+        GridManagerRef = Cast<AGridManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AGridManager::StaticClass()));
+    }
     if (GridManagerRef)
     {
         FVector WorldPos = GridManagerRef->GridToWorld(GridPos);
-        WorldPos.Z = GetActorLocation().Z;
-        SetActorLocation(WorldPos);
-    }
-}
-
-void ASokobanCharacter::SmoothMoveTo(FVector TargetWorldPos)
-{
-    if (!MoveCurve)
-    {
-        // 无曲线时直接瞬移
-        TargetWorldPos.Z = GetActorLocation().Z;
-        SetActorLocation(TargetWorldPos);
-        return;
-    }
-
-    bIsMoving = true;
-    MoveStartLocation = GetActorLocation();
-    MoveTargetLocation = TargetWorldPos;
-    MoveTargetLocation.Z = MoveStartLocation.Z; // 保持 Z 不变
-
-    MoveTimeline->PlayFromStart();
-}
-
-void ASokobanCharacter::OnMoveTimelineUpdate(float Alpha)
-{
-    FVector NewLocation = FMath::Lerp(MoveStartLocation, MoveTargetLocation, Alpha);
-    SetActorLocation(NewLocation);
-}
-
-void ASokobanCharacter::OnMoveTimelineFinished()
-{
-    OnMoveCompleted();
-}
-
-void ASokobanCharacter::OnMoveCompleted()
-{
-    bIsMoving = false;
-    // 精确对齐格子中心
-    if (GridManagerRef)
-    {
-        FVector SnapPos = GridManagerRef->GridToWorld(CurrentGridPos);
-        SnapPos.Z = GetActorLocation().Z;
-        SetActorLocation(SnapPos);
+        float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+        WorldPos.Z = HalfHeight;
+        TeleportTo(WorldPos, GetActorRotation(), false, true);
     }
 }
 
 void ASokobanCharacter::OnActorLogicalMoved(AActor* Actor, FIntPoint From, FIntPoint To)
 {
-    // 只响应自身的移动事件
     if (Actor != this) return;
 
     CurrentGridPos = To;
     if (GridManagerRef)
     {
-        SmoothMoveTo(GridManagerRef->GridToWorld(To));
+        MoveTargetLocation = GridManagerRef->GridToWorld(To);
+        MoveTargetLocation.Z = GetActorLocation().Z;
+        MoveDirection = (MoveTargetLocation - GetActorLocation()).GetSafeNormal2D();
+        bIsMoving = true;
     }
 }

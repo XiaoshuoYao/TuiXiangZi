@@ -141,3 +141,19 @@ void APushableBox::PlayFallIntoHoleAnim()
     SetActorEnableCollision(false);
     SetLifeSpan(1.0f);
 }
+
+void APushableBox::SetOnPlateVisual(bool bOnPlate, FLinearColor GroupColor)
+{
+    if (!DynamicMaterialInst) return;
+
+    if (bOnPlate)
+    {
+        DynamicMaterialInst->SetVectorParameterValue(FName("EmissiveColor"), GroupColor);
+        DynamicMaterialInst->SetScalarParameterValue(FName("EmissiveIntensity"), 3.0f);
+    }
+    else
+    {
+        DynamicMaterialInst->SetVectorParameterValue(FName("EmissiveColor"), FLinearColor::Black);
+        DynamicMaterialInst->SetScalarParameterValue(FName("EmissiveIntensity"), 0.0f);
+    }
+}

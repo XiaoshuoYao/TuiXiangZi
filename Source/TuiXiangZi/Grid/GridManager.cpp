@@ -8,6 +8,7 @@
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 AGridManager::AGridManager()
 {
@@ -512,8 +513,6 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
 {
     DestroyVisualActor(GridPos);
     if (Cell.CellType == EGridCellType::Empty) return;
-    // 机关类型由 Phase 3B 的专用 Actor (APressurePlate/ADoor) 负责可视化，此处跳过
-    if (Cell.CellType == EGridCellType::PressurePlate || Cell.CellType == EGridCellType::Door) return;
     UWorld* World = GetWorld();
     if (!World) return;
     FVector WorldPos = GridToWorld(GridPos);
@@ -525,11 +524,53 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
     UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(VisualActor);
     MeshComp->RegisterComponent();
     VisualActor->SetRootComponent(MeshComp);
-    UStaticMesh* Mesh = GetDefaultMeshForCellType(Cell.CellType);
-    if (Mesh) MeshComp->SetStaticMesh(Mesh);
-    UMaterialInterface* Material = GetDefaultMaterialForCellType(Cell.CellType);
-    if (Material) MeshComp->SetMaterial(0, Material);
-    switch (Cell.CellType)
+
+    // Goal / PressurePlate / Door 等特殊格子底下也需要地板，视觉上按 Floor 处理
+    const bool bUseFloorVisual = (Cell.CellType == EGridCellType::Goal
+        || Cell.CellType == EGridCellType::PressurePlate
+        || Cell.CellType == EGridCellType::Door);
+
+    // 用于样式查询的 Cell：特殊格子查 Floor 样式
+    FGridCell VisualCell = Cell;
+    if (bUseFloorVisual)
+    {
+        VisualCell.CellType = EGridCellType::Floor;
+    }
+
+    // 优先使用 TileStyleCatalog 中配置的 Mesh 和 Material
+    const FTileVisualStyle* Style = ResolveTileVisual(VisualCell);
+    if (Style && Style->Mesh)
+    {
+        MeshComp->SetStaticMesh(Style->Mesh);
+        if (Style->Material)
+        {
+            MeshComp->SetMaterial(0, Style->Material);
+        }
+    }
+    else
+    {
+        // Fallback: 引擎基础 mesh + 动态着色
+        UStaticMesh* Mesh = GetDefaultMeshForCellType(VisualCell.CellType);
+        if (Mesh) MeshComp->SetStaticMesh(Mesh);
+        UMaterialInterface* BaseMaterial = GetDefaultMaterialForCellType(VisualCell.CellType);
+        if (BaseMaterial)
+        {
+            UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BaseMaterial, VisualActor);
+            FLinearColor Color;
+            switch (VisualCell.CellType)
+            {
+            case EGridCellType::Floor: Color = FLinearColor(0.6f, 0.6f, 0.55f); break;
+            case EGridCellType::Wall:  Color = FLinearColor(0.3f, 0.25f, 0.2f); break;
+            case EGridCellType::Ice:   Color = FLinearColor(0.5f, 0.8f, 0.95f); break;
+            case EGridCellType::Goal:  Color = FLinearColor(0.9f, 0.85f, 0.2f); break;
+            default:                   Color = FLinearColor(0.5f, 0.5f, 0.5f); break;
+            }
+            DynMat->SetVectorParameterValue(FName("Color"), Color);
+            MeshComp->SetMaterial(0, DynMat);
+        }
+    }
+
+    switch (VisualCell.CellType)
     {
     case EGridCellType::Wall:
         MeshComp->SetWorldScale3D(FVector(CellSize / 100.0f));
@@ -540,6 +581,41 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         VisualActor->SetActorLocation(WorldPos);
         break;
     }
+
+    // Goal 格子在地板之上额外叠加一个目标标记
+    if (Cell.CellType == EGridCellType::Goal)
+    {
+        UStaticMeshComponent* GoalComp = NewObject<UStaticMeshComponent>(VisualActor);
+        GoalComp->RegisterComponent();
+        GoalComp->AttachToComponent(MeshComp, FAttachmentTransformRules::KeepRelativeTransform);
+
+        const FTileVisualStyle* GoalStyle = ResolveTileVisual(Cell); // 用原始 Goal 类型查样式
+        if (GoalStyle && GoalStyle->Mesh)
+        {
+            GoalComp->SetStaticMesh(GoalStyle->Mesh);
+            if (GoalStyle->Material)
+            {
+                GoalComp->SetMaterial(0, GoalStyle->Material);
+            }
+        }
+        else
+        {
+            // Fallback: 黄色平面标记
+            UStaticMesh* GoalMesh = GetDefaultMeshForCellType(EGridCellType::Goal);
+            if (GoalMesh) GoalComp->SetStaticMesh(GoalMesh);
+            UMaterialInterface* GoalBaseMat = GetDefaultMaterialForCellType(EGridCellType::Goal);
+            if (GoalBaseMat)
+            {
+                UMaterialInstanceDynamic* GoalDynMat = UMaterialInstanceDynamic::Create(GoalBaseMat, VisualActor);
+                GoalDynMat->SetVectorParameterValue(FName("Color"), FLinearColor(0.9f, 0.85f, 0.2f));
+                GoalComp->SetMaterial(0, GoalDynMat);
+            }
+        }
+        // 略微抬高避免 Z-fighting
+        GoalComp->SetWorldScale3D(FVector(CellSize / 100.0f, CellSize / 100.0f, 1.0f));
+        GoalComp->SetRelativeLocation(FVector(0, 0, 1.0f));
+    }
+
     VisualActors.Add(GridPos, VisualActor);
 }
 
@@ -572,5 +648,8 @@ UStaticMesh* AGridManager::GetDefaultMeshForCellType(EGridCellType CellType) con
 
 UMaterialInterface* AGridManager::GetDefaultMaterialForCellType(EGridCellType CellType) const
 {
-    return nullptr; // Phase 1 使用默认材质
+    // 使用引擎自带的基础材质，为不同地块类型设定不同颜色
+    // 颜色通过 SpawnOrUpdateVisualActor 中的动态材质实例设置
+    return LoadObject<UMaterialInterface>(nullptr,
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 }

@@ -17,7 +17,7 @@ static constexpr int32 MaxRecursionDepth = 5;
 // Internal Helpers
 // ============================================================================
 
-namespace
+namespace MCPStructJsonConverterPrivate
 {
 	bool TryGetNumber(const TSharedPtr<FJsonValue>& JsonValue, double& OutValue)
 	{
@@ -46,6 +46,7 @@ namespace
 		const TSharedPtr<FJsonValue>& JsonValue, const FProperty* Property,
 		void* ValuePtr, TArray<FString>& OutErrors, const FString& FieldPath, int32 Depth);
 }
+using namespace MCPStructJsonConverterPrivate;
 
 // ============================================================================
 // MapPropertyTypeString
@@ -98,7 +99,7 @@ FString MCPStructJsonConverter::MapPropertyTypeString(const FProperty* Property)
 // PropertyToJsonValue
 // ============================================================================
 
-namespace
+namespace MCPStructJsonConverterPrivate
 {
 	TSharedPtr<FJsonValue> PropertyToJsonValueInternal(
 		const FProperty* Property, const void* ValuePtr, int32 Depth)
@@ -350,7 +351,7 @@ TSharedPtr<FJsonValue> MCPStructJsonConverter::PropertyToJsonValue(
 // JsonValueToProperty
 // ============================================================================
 
-namespace
+namespace MCPStructJsonConverterPrivate
 {
 	bool JsonValueToPropertyInternal(
 		const TSharedPtr<FJsonValue>& JsonValue, const FProperty* Property,
@@ -902,7 +903,7 @@ bool MCPStructJsonConverter::JsonToStruct(
 // BuildFieldSchemaArray
 // ============================================================================
 
-namespace
+namespace MCPStructJsonConverterPrivate
 {
 	TSharedPtr<FJsonObject> BuildSingleFieldSchema(const FProperty* Property)
 	{

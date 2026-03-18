@@ -55,8 +55,8 @@ FORCEINLINE FIntPoint DirectionToOffset(EMoveDirection Dir)
     {
     case EMoveDirection::Up:    return FIntPoint(0, 1);
     case EMoveDirection::Down:  return FIntPoint(0, -1);
-    case EMoveDirection::Left:  return FIntPoint(-1, 0);
-    case EMoveDirection::Right: return FIntPoint(1, 0);
+    case EMoveDirection::Left:  return FIntPoint(1, 0);
+    case EMoveDirection::Right: return FIntPoint(-1, 0);
     default:                    return FIntPoint(0, 0);
     }
 }

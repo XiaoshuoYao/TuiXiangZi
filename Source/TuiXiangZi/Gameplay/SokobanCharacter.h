@@ -2,12 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Components/TimelineComponent.h"
 #include "Grid/GridTypes.h"
 #include "SokobanCharacter.generated.h"
 
 class AGridManager;
-class UCurveFloat;
 class UInputMappingContext;
 class UInputAction;
 class USpringArmComponent;
@@ -21,6 +19,7 @@ class TUIXIANGZI_API ASokobanCharacter : public ACharacter
 public:
     ASokobanCharacter();
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grid")
@@ -31,9 +30,6 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float MoveDuration = 0.15f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-    UCurveFloat* MoveCurve;
 
     void SnapToGridPos(FIntPoint GridPos);
 
@@ -60,22 +56,9 @@ protected:
     void OnMoveRight(const struct FInputActionValue& Value);
     void OnMoveInput(EMoveDirection Dir);
 
-    // ===== 平滑移动 =====
-    UPROPERTY(VisibleAnywhere, Category = "Movement")
-    UTimelineComponent* MoveTimeline;
-
-    FVector MoveStartLocation;
+    // ===== 网格移动 =====
     FVector MoveTargetLocation;
-
-    void SmoothMoveTo(FVector TargetWorldPos);
-
-    UFUNCTION()
-    void OnMoveTimelineUpdate(float Alpha);
-
-    UFUNCTION()
-    void OnMoveTimelineFinished();
-
-    void OnMoveCompleted();
+    FVector MoveDirection;
 
     void OnActorLogicalMoved(AActor* Actor, FIntPoint From, FIntPoint To);
 

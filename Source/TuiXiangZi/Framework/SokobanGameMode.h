@@ -6,6 +6,9 @@
 
 class AGridManager;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStepCountChanged, int32, NewCount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelCompleted, int32, TotalSteps);
+
 UCLASS()
 class TUIXIANGZI_API ASokobanGameMode : public AGameModeBase
 {
@@ -33,6 +36,41 @@ public:
     void ReturnToMainMenu();
 
     void OnPlayerEnteredGoal(FIntPoint GoalPos);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game")
+    TSubclassOf<class APushableBox> PushableBoxClass;
+
+    // ===== HUD Data Interface =====
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    int32 GetCurrentStepCount() const;
+
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    FString GetCurrentLevelName() const;
+
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    bool IsLevelCompleted() const;
+
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    void RequestUndo();
+
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    void RequestReset();
+
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    void RequestNextLevel();
+
+    UFUNCTION(BlueprintCallable, Category = "Game|HUD")
+    void RequestReturnToMenu();
+
+    // ===== Delegates =====
+    UPROPERTY(BlueprintAssignable, Category = "Game")
+    FOnStepCountChanged OnStepCountChanged;
+
+    UPROPERTY(BlueprintAssignable, Category = "Game")
+    FOnLevelCompleted OnLevelCompleted;
+
+    /** Called after each move to update box-on-plate visuals. */
+    void UpdateBoxOnPlateVisuals();
 
 protected:
     virtual void BeginPlay() override;

@@ -20,7 +20,17 @@
       "Bash(cp \"$BASE/Source/TuiXiangZi/Gameplay/SokobanCharacter.cpp\" \"$WK/Source/TuiXiangZi/Gameplay/SokobanCharacter.cpp\")",
       "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/Grid/\"* Source/TuiXiangZi/Grid/)",
       "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/Gameplay/\"* Source/TuiXiangZi/Gameplay/)",
-      "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/LevelData/\"* Source/TuiXiangZi/LevelData/)"
+      "Bash(cp -r \"f:/SideProject/KuluoBishi/Source/TuiXiangZi/LevelData/\"* Source/TuiXiangZi/LevelData/)",
+      "Bash(find /f/SideProject/KuluoBishi/Content -name *.json -type f)",
+      "Bash(ls -la /f/SideProject/KuluoBishi/*.uproject)",
+      "Bash(find /f/SideProject/KuluoBishi/Content/Blueprints -name *.uasset)",
+      "Bash(xargs grep:*)",
+      "Bash(find /f/SideProject/KuluoBishi -path */Engine* -prune -o -name CapsuleComponent.h -print)",
+      "Bash(find /f/SideProject/KuluoBishi -type f -name *TopDown*)",
+      "Bash(grep -r \"ABP_Manny\\\\|AnimInstance\\\\|GetCharacterMovement\" /f/SideProject/KuluoBishi/Source --include=*.cpp --include=*.h)",
+      "Bash(grep -r Velocity /f/SideProject/KuluoBishi/Source --include=*.h --include=*.cpp)",
+      "Bash(grep -r \"GetOwner\\\\|GetCharacterMovement\\\\|Speed\\\\|Velocity\" /f/SideProject/KuluoBishi/Source/TuiXiangZi --include=*.cpp --include=*.h)",
+      "Bash(grep -E \"\\\\.\\(h|cpp\\)$\")"
     ],
     "additionalDirectories": [
       "f:\\SideProject\\KuluoBishi\\Source\\TuiXiangZi",

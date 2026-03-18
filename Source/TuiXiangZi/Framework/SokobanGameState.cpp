@@ -1,4 +1,5 @@
 #include "Framework/SokobanGameState.h"
+#include "Framework/SokobanGameMode.h"
 #include "Grid/GridManager.h"
 #include "Grid/GridTypes.h"
 #include "Gameplay/SokobanCharacter.h"
@@ -157,8 +158,14 @@ void ASokobanGameState::RestoreSnapshot(const FLevelSnapshot& Snapshot, AGridMan
         FActorSpawnParameters SpawnParams;
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+        UClass* BoxClass = APushableBox::StaticClass();
+        if (ASokobanGameMode* GM_Mode = Cast<ASokobanGameMode>(World->GetAuthGameMode()))
+        {
+            if (GM_Mode->PushableBoxClass)
+                BoxClass = GM_Mode->PushableBoxClass.Get();
+        }
         APushableBox* NewBox = World->SpawnActor<APushableBox>(
-            APushableBox::StaticClass(), FTransform(WorldPos), SpawnParams);
+            BoxClass, FTransform(WorldPos), SpawnParams);
         if (NewBox)
         {
             NewBox->SnapToGridPos(BoxPos);

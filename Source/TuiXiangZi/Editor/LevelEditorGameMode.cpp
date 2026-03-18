@@ -68,6 +68,20 @@ void ALevelEditorGameMode::SetCurrentGroupId(int32 NewGroupId)
     CurrentGroupId = NewGroupId;
 }
 
+void ALevelEditorGameMode::CancelPlacementMode()
+{
+    if (CurrentMode == EEditorMode::PlacingPlatesForDoor)
+    {
+        // Warn if no plates were placed for the current group
+        int32 PlateCount = CountPlatesForGroup(CurrentGroupId);
+        if (PlateCount == 0)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Editor: Door group %d has no plates!"), CurrentGroupId);
+        }
+    }
+    SetEditorMode(EEditorMode::Normal);
+}
+
 EGridCellType ALevelEditorGameMode::BrushToCellType(EEditorBrush Brush) const
 {
     switch (Brush)
@@ -86,6 +100,13 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
 
+    // If in plate placement mode, handle differently
+    if (CurrentMode == EEditorMode::PlacingPlatesForDoor || CurrentMode == EEditorMode::EditingDoorGroup)
+    {
+        HandlePlateModePaint(Pos);
+        return;
+    }
+
     switch (CurrentBrush)
     {
     case EEditorBrush::Floor:
@@ -100,10 +121,18 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     }
     case EEditorBrush::Door:
     {
+        // Door brush: create new group, place door, enter plate placement mode
+        int32 NewGroupId = CreateNewGroup();
+
         FGridCell Cell;
         Cell.CellType = EGridCellType::Door;
-        Cell.GroupId = CurrentGroupId;
+        Cell.GroupId = NewGroupId;
         GridManagerRef->SetCell(Pos, Cell);
+
+        // Enter plate placement mode for this group
+        CurrentGroupId = NewGroupId;
+        SetEditorMode(EEditorMode::PlacingPlatesForDoor);
+        UE_LOG(LogTemp, Log, TEXT("Editor: Placed door for group %d. Click to place plates, Esc to finish."), NewGroupId);
         break;
     }
     case EEditorBrush::PressurePlate:
@@ -116,13 +145,11 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     }
     case EEditorBrush::BoxSpawn:
     {
-        // Don't add duplicates
         if (!BoxSpawnPositions.Contains(Pos))
         {
             BoxSpawnPositions.Add(Pos);
             SpawnBoxSpawnMarker(Pos);
         }
-        // Also ensure there's a floor tile underneath
         if (!GridManagerRef->HasCell(Pos))
         {
             FGridCell Cell;
@@ -135,7 +162,6 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     {
         PlayerStartPos = Pos;
         SpawnPlayerStartMarker(Pos);
-        // Also ensure there's a floor tile underneath
         if (!GridManagerRef->HasCell(Pos))
         {
             FGridCell Cell;
@@ -154,9 +180,78 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     UpdateGridVisualizerBounds();
 }
 
+void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
+{
+    if (!GridManagerRef) return;
+
+    // Check if clicking an existing same-group plate -> toggle (remove it)
+    if (GridManagerRef->HasCell(Pos))
+    {
+        FGridCell ExistingCell = GridManagerRef->GetCell(Pos);
+        if (ExistingCell.CellType == EGridCellType::PressurePlate && ExistingCell.GroupId == CurrentGroupId)
+        {
+            // Remove the plate, replace with floor
+            FGridCell FloorCell;
+            FloorCell.CellType = EGridCellType::Floor;
+            GridManagerRef->SetCell(Pos, FloorCell);
+            UpdateGridVisualizerBounds();
+            return;
+        }
+
+        // Clicking existing door of same group -> ignore
+        if (ExistingCell.CellType == EGridCellType::Door && ExistingCell.GroupId == CurrentGroupId)
+        {
+            return;
+        }
+    }
+
+    // Only place on floor-type cells
+    if (GridManagerRef->HasCell(Pos))
+    {
+        FGridCell ExistingCell = GridManagerRef->GetCell(Pos);
+        if (ExistingCell.CellType != EGridCellType::Floor)
+        {
+            return; // Can only place plates on floor
+        }
+    }
+
+    // Place pressure plate with current group
+    FGridCell Cell;
+    Cell.CellType = EGridCellType::PressurePlate;
+    Cell.GroupId = CurrentGroupId;
+    GridManagerRef->SetCell(Pos, Cell);
+    UpdateGridVisualizerBounds();
+}
+
 void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
+
+    // Check if erasing a door - also delete entire group
+    if (GridManagerRef->HasCell(Pos))
+    {
+        FGridCell Cell = GridManagerRef->GetCell(Pos);
+        if (Cell.CellType == EGridCellType::Door)
+        {
+            int32 DoorGroupId = Cell.GroupId;
+            // Delete entire group (door + all plates)
+            DeleteGroup(DoorGroupId);
+            // Also remove box/player markers at this position
+            BoxSpawnPositions.Remove(Pos);
+            RemoveBoxSpawnMarker(Pos);
+            if (PlayerStartPos == Pos)
+            {
+                PlayerStartPos = FIntPoint(0, 0);
+                if (PlayerStartMarker)
+                {
+                    PlayerStartMarker->Destroy();
+                    PlayerStartMarker = nullptr;
+                }
+            }
+            UpdateGridVisualizerBounds();
+            return;
+        }
+    }
 
     // Remove the grid cell
     GridManagerRef->RemoveCell(Pos);
@@ -177,6 +272,113 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
     }
 
     UpdateGridVisualizerBounds();
+}
+
+bool ALevelEditorGameMode::ShouldConfirmErase(FIntPoint GridPos) const
+{
+    if (PlayerStartPos == GridPos) return true;
+    if (BoxSpawnPositions.Contains(GridPos)) return true;
+
+    if (GridManagerRef && GridManagerRef->HasCell(GridPos))
+    {
+        FGridCell Cell = GridManagerRef->GetCell(GridPos);
+        if (Cell.CellType == EGridCellType::Door) return true;
+        if (Cell.CellType == EGridCellType::Goal) return true;
+    }
+    return false;
+}
+
+FString ALevelEditorGameMode::GetEraseWarning(FIntPoint GridPos) const
+{
+    if (PlayerStartPos == GridPos)
+        return TEXT("This cell contains the Player Start position!");
+
+    if (BoxSpawnPositions.Contains(GridPos))
+        return TEXT("This cell contains a Box Spawn position!");
+
+    if (GridManagerRef && GridManagerRef->HasCell(GridPos))
+    {
+        FGridCell Cell = GridManagerRef->GetCell(GridPos);
+        if (Cell.CellType == EGridCellType::Door)
+            return FString::Printf(TEXT("Erasing this Door will delete the entire group %d (door + all plates)!"), Cell.GroupId);
+        if (Cell.CellType == EGridCellType::Goal)
+            return TEXT("This cell is the Goal!");
+    }
+    return FString();
+}
+
+FLevelValidationResult ALevelEditorGameMode::ValidateLevel() const
+{
+    FLevelValidationResult Result;
+
+    // Error: No player start (check if it's on a valid cell)
+    if (!GridManagerRef || !GridManagerRef->HasCell(PlayerStartPos))
+    {
+        Result.Errors.Add(TEXT("No valid Player Start position!"));
+    }
+
+    // Error: No goal
+    bool bHasGoal = false;
+    if (GridManagerRef)
+    {
+        FIntRect Bounds = GridManagerRef->GetGridBounds();
+        for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+        {
+            for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+            {
+                FIntPoint Pos(X, Y);
+                if (GridManagerRef->HasCell(Pos))
+                {
+                    FGridCell Cell = GridManagerRef->GetCell(Pos);
+                    if (Cell.CellType == EGridCellType::Goal)
+                    {
+                        bHasGoal = true;
+                        break;
+                    }
+                }
+            }
+            if (bHasGoal) break;
+        }
+    }
+    if (!bHasGoal)
+    {
+        Result.Errors.Add(TEXT("No Goal cell found! The level needs at least one Goal."));
+    }
+
+    // Warning: Door without plates
+    if (GridManagerRef)
+    {
+        // Collect all door group IDs
+        TSet<int32> DoorGroups;
+        TSet<int32> PlateGroups;
+        FIntRect Bounds = GridManagerRef->GetGridBounds();
+        for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+        {
+            for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+            {
+                FIntPoint Pos(X, Y);
+                if (!GridManagerRef->HasCell(Pos)) continue;
+                FGridCell Cell = GridManagerRef->GetCell(Pos);
+                if (Cell.CellType == EGridCellType::Door) DoorGroups.Add(Cell.GroupId);
+                if (Cell.CellType == EGridCellType::PressurePlate) PlateGroups.Add(Cell.GroupId);
+            }
+        }
+        for (int32 DoorGroup : DoorGroups)
+        {
+            if (!PlateGroups.Contains(DoorGroup))
+            {
+                Result.Warnings.Add(FString::Printf(TEXT("Door group %d has no pressure plates!"), DoorGroup));
+            }
+        }
+    }
+
+    // Warning: No boxes
+    if (BoxSpawnPositions.Num() == 0)
+    {
+        Result.Warnings.Add(TEXT("No box spawn positions defined."));
+    }
+
+    return Result;
 }
 
 void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
@@ -205,6 +407,7 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
     MaxGroupId = 0;
     CurrentBrush = EEditorBrush::Floor;
     CurrentMode = EEditorMode::Normal;
+    GroupStyles.Empty();
 
     // Create empty grid
     GridManagerRef->InitEmptyGrid(Width, Height);
@@ -217,6 +420,24 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
 
 bool ALevelEditorGameMode::SaveLevel(const FString& FileName)
 {
+    // Validate before saving
+    FLevelValidationResult Validation = ValidateLevel();
+    if (Validation.HasErrors())
+    {
+        for (const FString& Error : Validation.Errors)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Level Validation Error: %s"), *Error);
+        }
+        return false;
+    }
+    if (Validation.HasWarnings())
+    {
+        for (const FString& Warning : Validation.Warnings)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Level Validation Warning: %s"), *Warning);
+        }
+    }
+
     FLevelData Data = BuildLevelData();
     FString FilePath = ULevelSerializer::GetDefaultLevelDirectory() / FileName;
 
@@ -254,6 +475,7 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
     }
     BoxSpawnMarkers.Empty();
     BoxSpawnPositions.Empty();
+    GroupStyles.Empty();
 
     // Load grid data
     if (GridManagerRef)
@@ -264,6 +486,7 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
     // Restore editor state
     PlayerStartPos = Data.PlayerStart;
     BoxSpawnPositions = Data.BoxPositions;
+    GroupStyles = Data.GroupStyles;
 
     // Find max group ID from loaded data
     MaxGroupId = 0;
@@ -274,7 +497,12 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
             MaxGroupId = CellData.GroupId;
         }
     }
+    for (const FMechanismGroupStyleData& GS : GroupStyles)
+    {
+        if (GS.GroupId > MaxGroupId) MaxGroupId = GS.GroupId;
+    }
     CurrentGroupId = 0;
+    CurrentMode = EEditorMode::Normal;
 
     // Recreate markers
     SpawnPlayerStartMarker(PlayerStartPos);
@@ -289,20 +517,28 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
 
 void ALevelEditorGameMode::TestCurrentLevel()
 {
-    // Save to temp file
     FLevelData Data = BuildLevelData();
     FString TempFilePath = ULevelSerializer::GetDefaultLevelDirectory() / TEXT("_temp_editor_test.json");
     ULevelSerializer::SaveToJson(Data, TempFilePath);
 
-    // Open the game map with options pointing to the temp file
     UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("GameMap")),
-        true, TEXT("LevelFile=_temp_editor_test.json"));
+        true, TEXT("FromEditor=true&LevelJson=") + TempFilePath);
 }
 
 int32 ALevelEditorGameMode::CreateNewGroup()
 {
     MaxGroupId++;
+
+    FMechanismGroupStyleData NewGroup;
+    NewGroup.GroupId = MaxGroupId;
+    NewGroup.BaseColor = GetDefaultGroupColor(MaxGroupId);
+    NewGroup.ActiveColor = NewGroup.BaseColor * 1.3f; // Brighter active
+    NewGroup.ActiveColor.A = 1.0f;
+    NewGroup.DisplayName = FString::Printf(TEXT("Group %d"), MaxGroupId);
+    GroupStyles.Add(NewGroup);
+
     CurrentGroupId = MaxGroupId;
+    OnGroupCreated.Broadcast(MaxGroupId);
     return MaxGroupId;
 }
 
@@ -310,7 +546,7 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
 {
     if (!GridManagerRef) return;
 
-    // Iterate all cells and remove those with matching GroupId
+    // Remove all cells with matching GroupId
     FIntRect Bounds = GridManagerRef->GetGridBounds();
     TArray<FIntPoint> ToRemove;
 
@@ -322,7 +558,8 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
             if (GridManagerRef->HasCell(Pos))
             {
                 FGridCell Cell = GridManagerRef->GetCell(Pos);
-                if (Cell.GroupId == GroupId)
+                if (Cell.GroupId == GroupId &&
+                    (Cell.CellType == EGridCellType::Door || Cell.CellType == EGridCellType::PressurePlate))
                 {
                     ToRemove.Add(Pos);
                 }
@@ -332,10 +569,137 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
 
     for (const FIntPoint& Pos : ToRemove)
     {
-        GridManagerRef->RemoveCell(Pos);
+        // Replace with floor instead of removing entirely
+        FGridCell FloorCell;
+        FloorCell.CellType = EGridCellType::Floor;
+        GridManagerRef->SetCell(Pos, FloorCell);
     }
 
+    // Remove from GroupStyles
+    GroupStyles.RemoveAll([GroupId](const FMechanismGroupStyleData& GS) { return GS.GroupId == GroupId; });
+
+    OnGroupDeleted.Broadcast(GroupId);
     UpdateGridVisualizerBounds();
+}
+
+TArray<int32> ALevelEditorGameMode::GetAllGroupIds() const
+{
+    TArray<int32> Ids;
+    for (const FMechanismGroupStyleData& GS : GroupStyles)
+    {
+        Ids.Add(GS.GroupId);
+    }
+    return Ids;
+}
+
+FMechanismGroupStyleData ALevelEditorGameMode::GetGroupStyle(int32 GroupId) const
+{
+    for (const FMechanismGroupStyleData& GS : GroupStyles)
+    {
+        if (GS.GroupId == GroupId) return GS;
+    }
+    return FMechanismGroupStyleData();
+}
+
+void ALevelEditorGameMode::SetGroupColor(int32 GroupId, FLinearColor BaseColor, FLinearColor ActiveColor)
+{
+    for (FMechanismGroupStyleData& GS : GroupStyles)
+    {
+        if (GS.GroupId == GroupId)
+        {
+            GS.BaseColor = BaseColor;
+            GS.ActiveColor = ActiveColor;
+            return;
+        }
+    }
+}
+
+int32 ALevelEditorGameMode::CountPlatesForGroup(int32 GroupId) const
+{
+    if (!GridManagerRef) return 0;
+
+    int32 Count = 0;
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+    {
+        for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+        {
+            FIntPoint Pos(X, Y);
+            if (GridManagerRef->HasCell(Pos))
+            {
+                FGridCell Cell = GridManagerRef->GetCell(Pos);
+                if (Cell.CellType == EGridCellType::PressurePlate && Cell.GroupId == GroupId)
+                {
+                    Count++;
+                }
+            }
+        }
+    }
+    return Count;
+}
+
+FLinearColor ALevelEditorGameMode::GetDefaultGroupColor(int32 GroupId) const
+{
+    // Cycle through predefined colors
+    static const FLinearColor Colors[] = {
+        FLinearColor(0.8f, 0.2f, 0.2f), // Red
+        FLinearColor(0.2f, 0.3f, 0.8f), // Blue
+        FLinearColor(0.2f, 0.7f, 0.3f), // Green
+        FLinearColor(0.6f, 0.2f, 0.7f), // Purple
+        FLinearColor(0.9f, 0.6f, 0.1f), // Orange
+        FLinearColor(0.1f, 0.7f, 0.7f), // Cyan
+    };
+    const int32 ColorCount = UE_ARRAY_COUNT(Colors);
+    return Colors[(GroupId - 1) % ColorCount];
+}
+
+FString ALevelEditorGameMode::GetStatusText() const
+{
+    FString ModeStr;
+    switch (CurrentMode)
+    {
+    case EEditorMode::Normal:
+        ModeStr = TEXT("Normal");
+        break;
+    case EEditorMode::PlacingPlatesForDoor:
+        ModeStr = FString::Printf(TEXT("Placing Plates for Group %d (Esc to finish)"), CurrentGroupId);
+        break;
+    case EEditorMode::EditingDoorGroup:
+        ModeStr = FString::Printf(TEXT("Editing Group %d (Esc to finish)"), CurrentGroupId);
+        break;
+    }
+
+    FString BrushStr;
+    switch (CurrentBrush)
+    {
+    case EEditorBrush::Floor: BrushStr = TEXT("Floor"); break;
+    case EEditorBrush::Wall: BrushStr = TEXT("Wall"); break;
+    case EEditorBrush::Ice: BrushStr = TEXT("Ice"); break;
+    case EEditorBrush::Goal: BrushStr = TEXT("Goal"); break;
+    case EEditorBrush::Door: BrushStr = TEXT("Door"); break;
+    case EEditorBrush::PressurePlate: BrushStr = TEXT("Plate"); break;
+    case EEditorBrush::BoxSpawn: BrushStr = TEXT("Box"); break;
+    case EEditorBrush::PlayerStart: BrushStr = TEXT("Start"); break;
+    case EEditorBrush::Eraser: BrushStr = TEXT("Eraser"); break;
+    }
+
+    return FString::Printf(TEXT("[%s] Brush: %s | Cells: %d | Boxes: %d | Groups: %d"),
+        *ModeStr, *BrushStr, GetCellCount(), GetBoxCount(), GetGroupCount());
+}
+
+int32 ALevelEditorGameMode::GetCellCount() const
+{
+    if (!GridManagerRef) return 0;
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    int32 Count = 0;
+    for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+    {
+        for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+        {
+            if (GridManagerRef->HasCell(FIntPoint(X, Y))) Count++;
+        }
+    }
+    return Count;
 }
 
 FLevelData ALevelEditorGameMode::BuildLevelData() const
@@ -343,10 +707,10 @@ FLevelData ALevelEditorGameMode::BuildLevelData() const
     FLevelData Data;
     Data.PlayerStart = PlayerStartPos;
     Data.BoxPositions = BoxSpawnPositions;
+    Data.GroupStyles = GroupStyles;
 
     if (!GridManagerRef) return Data;
 
-    // Iterate grid bounds to collect all cells
     FIntRect Bounds = GridManagerRef->GetGridBounds();
     for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
     {
@@ -375,7 +739,6 @@ void ALevelEditorGameMode::SpawnPlayerStartMarker(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
 
-    // Destroy old marker
     if (PlayerStartMarker)
     {
         PlayerStartMarker->Destroy();
@@ -386,7 +749,7 @@ void ALevelEditorGameMode::SpawnPlayerStartMarker(FIntPoint Pos)
     if (!World) return;
 
     FVector WorldPos = GridManagerRef->GridToWorld(Pos);
-    WorldPos.Z = 5.0f; // Slightly above floor
+    WorldPos.Z = 5.0f;
 
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -405,7 +768,6 @@ void ALevelEditorGameMode::SpawnPlayerStartMarker(FIntPoint Pos)
         MeshComp->SetStaticMesh(CylinderMesh);
     }
 
-    // Scale down and color green
     float CellSize = GridManagerRef->CellSize;
     MeshComp->SetWorldScale3D(FVector(CellSize * 0.003f, CellSize * 0.003f, 0.01f));
 
@@ -425,7 +787,6 @@ void ALevelEditorGameMode::SpawnBoxSpawnMarker(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
 
-    // Remove existing marker at this position
     RemoveBoxSpawnMarker(Pos);
 
     UWorld* World = GetWorld();
@@ -451,7 +812,6 @@ void ALevelEditorGameMode::SpawnBoxSpawnMarker(FIntPoint Pos)
         MeshComp->SetStaticMesh(CubeMesh);
     }
 
-    // Scale down and color orange
     float CellSize = GridManagerRef->CellSize;
     MeshComp->SetWorldScale3D(FVector(CellSize * 0.005f, CellSize * 0.005f, CellSize * 0.005f));
 

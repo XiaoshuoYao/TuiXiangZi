@@ -28,7 +28,7 @@
 // ============================================================================
 // Helpers
 // ============================================================================
-namespace
+namespace MCPToolBlueprintsPrivate
 {
 	/** Load a blueprint by asset path. Returns nullptr on failure. */
 	UBlueprint* LoadBlueprintByPath(const FString& BpPath)
@@ -45,6 +45,7 @@ namespace
 		return TEXT("Other");
 	}
 }
+using namespace MCPToolBlueprintsPrivate;
 
 // ============================================================================
 // ue_bp_list

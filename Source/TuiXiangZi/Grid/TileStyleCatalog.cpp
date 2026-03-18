@@ -3,6 +3,7 @@
 
 #if WITH_EDITOR
 #include "Components/SceneCaptureComponent2D.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -64,47 +65,89 @@ void UTileStyleCatalog::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 
 void UTileStyleCatalog::RegenerateAllThumbnails()
 {
-    for (FTileVisualStyle& Style : Styles)
+    // 1. 检查是否有需要渲染的条目
+    bool bAnyNeedRender = false;
+    for (const FTileVisualStyle& Style : Styles)
     {
-        if (Style.Mesh)
-        {
-            Style.Thumbnail = RenderStyleThumbnail(this, Style.Mesh, Style.Material);
-        }
-        else
-        {
-            Style.Thumbnail = nullptr;
-        }
+        if (Style.Mesh) { bAnyNeedRender = true; break; }
     }
-}
 
-UTextureRenderTarget2D* UTileStyleCatalog::RenderStyleThumbnail(
-    UObject* Outer, UStaticMesh* Mesh, UMaterialInterface* Material, int32 Resolution)
-{
-    if (!Mesh) return nullptr;
+    if (!bAnyNeedRender)
+    {
+        // 全部清空，旧 RT 由 GC 回收（Outer 是 GetTransientPackage）
+        for (FTileVisualStyle& Style : Styles)
+            Style.Thumbnail = nullptr;
+        return;
+    }
 
-    // 创建 RenderTarget
-    UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>(Outer);
-    RT->InitAutoFormat(Resolution, Resolution);
-    RT->ClearColor = FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
-
-    // 创建临时预览世界
-    UWorld* PreviewWorld = UWorld::CreateWorld(EWorldType::EditorPreview, false);
-    if (!PreviewWorld) return nullptr;
+    // 2. 创建共享预览世界（所有条目复用同一个）
+    UWorld* PreviewWorld = UWorld::CreateWorld(EWorldType::EditorPreview, false, TEXT("TileThumbWorld"));
+    if (!PreviewWorld) return;
 
     FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::EditorPreview);
     WorldContext.SetCurrentWorld(PreviewWorld);
 
-    // 生成临时 Actor 承载 Mesh
+    // 3. 添加灯光（Key Light + Fill Light）——解决全黑问题
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    AActor* PreviewActor = PreviewWorld->SpawnActor<AActor>(AActor::StaticClass(), FTransform::Identity, SpawnParams);
-    if (!PreviewActor)
+
+    AActor* LightActor = PreviewWorld->SpawnActor<AActor>(AActor::StaticClass(), FTransform::Identity, SpawnParams);
     {
-        GEngine->DestroyWorldContext(PreviewWorld);
-        PreviewWorld->DestroyWorld(false);
-        return nullptr;
+        // 主光：从左上方 45° 打下来
+        UDirectionalLightComponent* KeyLight = NewObject<UDirectionalLightComponent>(LightActor);
+        KeyLight->SetWorldRotation(FRotator(-45.0f, -45.0f, 0.0f));
+        KeyLight->Intensity = 4.0f;
+        KeyLight->RegisterComponent();
+
+        // 补光：从右下方打，强度较低
+        UDirectionalLightComponent* FillLight = NewObject<UDirectionalLightComponent>(LightActor);
+        FillLight->SetWorldRotation(FRotator(-30.0f, 135.0f, 0.0f));
+        FillLight->Intensity = 1.5f;
+        FillLight->RegisterComponent();
     }
 
+    // 4. 逐条目渲染
+    for (FTileVisualStyle& Style : Styles)
+    {
+        if (!Style.Mesh)
+        {
+            Style.Thumbnail = nullptr;
+            continue;
+        }
+
+        // 复用已有 RT，避免反复分配
+        if (!Style.Thumbnail || !IsValid(Style.Thumbnail)
+            || Style.Thumbnail->SizeX != ThumbnailResolution)
+        {
+            Style.Thumbnail = NewObject<UTextureRenderTarget2D>(GetTransientPackage());
+            Style.Thumbnail->InitAutoFormat(ThumbnailResolution, ThumbnailResolution);
+            Style.Thumbnail->ClearColor = FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
+            Style.Thumbnail->UpdateResourceImmediate(true);
+        }
+
+        RenderMeshToTarget(PreviewWorld, Style.Thumbnail, Style.Mesh, Style.Material);
+    }
+
+    // 5. 清理：一次性销毁共享世界
+    LightActor->Destroy();
+    GEngine->DestroyWorldContext(PreviewWorld);
+    PreviewWorld->DestroyWorld(false);
+}
+
+void UTileStyleCatalog::RenderMeshToTarget(
+    UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
+    UStaticMesh* Mesh, UMaterialInterface* Material)
+{
+    if (!PreviewWorld || !RT || !Mesh) return;
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    AActor* PreviewActor = PreviewWorld->SpawnActor<AActor>(
+        AActor::StaticClass(), FTransform::Identity, SpawnParams);
+    if (!PreviewActor) return;
+
+    // Mesh 组件
     UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(PreviewActor);
     MeshComp->RegisterComponent();
     PreviewActor->SetRootComponent(MeshComp);
@@ -114,33 +157,27 @@ UTextureRenderTarget2D* UTileStyleCatalog::RenderStyleThumbnail(
         MeshComp->SetMaterial(0, Material);
     }
 
-    // 根据 Mesh 包围盒计算相机位置
-    FBoxSphereBounds MeshBounds = Mesh->GetBounds();
-    float BoundsRadius = MeshBounds.SphereRadius;
-    if (BoundsRadius < KINDA_SMALL_NUMBER) BoundsRadius = 100.0f;
+    // 根据包围盒计算相机位置
+    FBoxSphereBounds Bounds = Mesh->GetBounds();
+    float Radius = FMath::Max(Bounds.SphereRadius, 1.0f);
 
-    FVector CameraLocation = MeshBounds.Origin + FVector(-BoundsRadius * 1.5f, -BoundsRadius * 1.5f, BoundsRadius * 1.2f);
-    FRotator CameraRotation = (MeshBounds.Origin - CameraLocation).Rotation();
+    FVector CamPos = Bounds.Origin + FVector(-Radius * 2.0f, Radius * 1.0f, Radius * 1.5f);
+    FRotator CamRot = (Bounds.Origin - CamPos).Rotation();
 
-    // 创建 SceneCapture
-    USceneCaptureComponent2D* CaptureComp = NewObject<USceneCaptureComponent2D>(PreviewActor);
-    CaptureComp->RegisterComponent();
-    CaptureComp->TextureTarget = RT;
-    CaptureComp->SetWorldLocationAndRotation(CameraLocation, CameraRotation);
-    CaptureComp->FOVAngle = 30.0f;
-    CaptureComp->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
-    CaptureComp->bCaptureEveryFrame = false;
-    CaptureComp->bCaptureOnMovement = false;
-    CaptureComp->ShowOnlyComponent(MeshComp);
+    // SceneCapture 组件
+    USceneCaptureComponent2D* Capture = NewObject<USceneCaptureComponent2D>(PreviewActor);
+    Capture->RegisterComponent();
+    Capture->TextureTarget = RT;
+    Capture->SetWorldLocationAndRotation(CamPos, CamRot);
+    Capture->FOVAngle = 30.0f;
+    Capture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+    Capture->bCaptureEveryFrame = false;
+    Capture->bCaptureOnMovement = false;
 
     // 执行一次捕获
-    CaptureComp->CaptureScene();
+    Capture->CaptureScene();
 
-    // 清理预览世界
+    // 销毁临时 Actor（灯光留在世界里，被所有条目共享）
     PreviewActor->Destroy();
-    GEngine->DestroyWorldContext(PreviewWorld);
-    PreviewWorld->DestroyWorld(false);
-
-    return RT;
 }
 #endif

@@ -47,13 +47,21 @@ public:
 
     bool HasStyle(FName StyleId) const;
 
+#if WITH_EDITORONLY_DATA
+    /** 缩略图分辨率 */
+    UPROPERTY(EditAnywhere, Category = "TileStyle|Thumbnail", meta = (ClampMin = 64, ClampMax = 512))
+    int32 ThumbnailResolution = 128;
+#endif
+
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
     /** 为所有 Style 条目重新渲染缩略图 */
     void RegenerateAllThumbnails();
 
-    /** 为单个 Style 渲染缩略图（Mesh+Material → RenderTarget） */
-    static UTextureRenderTarget2D* RenderStyleThumbnail(UObject* Outer, UStaticMesh* Mesh, UMaterialInterface* Material, int32 Resolution = 128);
+private:
+    /** 将 Mesh+Material 渲染到已有的 RenderTarget 中 */
+    static void RenderMeshToTarget(UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
+        UStaticMesh* Mesh, UMaterialInterface* Material);
 #endif
 };

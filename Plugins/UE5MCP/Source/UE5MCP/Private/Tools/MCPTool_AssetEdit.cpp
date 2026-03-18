@@ -32,7 +32,7 @@
 // ============================================================================
 // Helper: Read-only guard
 // ============================================================================
-namespace
+namespace MCPToolAssetEditPrivate
 {
 	bool IsReadOnly(FMCPRuntimeState& RuntimeState, TSharedPtr<FJsonObject>& OutEnvelope)
 	{
@@ -47,6 +47,7 @@ namespace
 		return false;
 	}
 }
+using namespace MCPToolAssetEditPrivate;
 
 // ============================================================================
 // ue_create_folder

@@ -21,5 +21,6 @@ UENUM(BlueprintType)
 enum class EEditorMode : uint8
 {
     Normal,
-    PlacingPlates
+    PlacingPlatesForDoor,
+    EditingDoorGroup
 };

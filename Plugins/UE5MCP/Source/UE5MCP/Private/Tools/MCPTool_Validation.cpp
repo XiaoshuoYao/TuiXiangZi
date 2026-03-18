@@ -27,7 +27,7 @@
 // ============================================================================
 // Shared Helpers
 // ============================================================================
-namespace
+namespace MCPToolValidationPrivate
 {
 	/** Resolve a world parameter to a UWorld*. */
 	UWorld* ResolveWorld(const FString& WorldParam)
@@ -118,6 +118,7 @@ namespace
 		return Prefixes;
 	}
 }
+using namespace MCPToolValidationPrivate;
 
 // ============================================================================
 // ue_validate_references — broken hard-dependency check

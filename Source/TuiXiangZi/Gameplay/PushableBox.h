@@ -37,7 +37,10 @@ public:
 
     void SnapToGridPos(FIntPoint GridPos);
     void SmoothMoveTo(FVector TargetWorldPos);
-    void PlayFallIntoHoleAnim(); // Phase 3 预留
+    void PlayFallIntoHoleAnim();
+
+    /** Visual feedback: box on pressure plate glow. */
+    void SetOnPlateVisual(bool bOnPlate, FLinearColor GroupColor);
 
 protected:
     UPROPERTY(VisibleAnywhere, Category = "Movement")

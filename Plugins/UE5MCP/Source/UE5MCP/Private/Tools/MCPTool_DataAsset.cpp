@@ -29,7 +29,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogMCPDataAsset, Log, All);
 // Local helpers
 // ============================================================================
 
-namespace
+namespace MCPToolDataAssetPrivate
 {
 	bool IsReadOnly(FMCPRuntimeState& RuntimeState, TSharedPtr<FJsonObject>& OutEnvelope)
 	{
@@ -141,6 +141,7 @@ namespace
 			*static_cast<FString*>(ValPtr) = Value;
 	}
 }
+using namespace MCPToolDataAssetPrivate;
 
 // ============================================================================
 // ue_get_dataasset_schema

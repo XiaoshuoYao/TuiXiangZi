@@ -23,10 +23,11 @@ public:
 	virtual bool IsActivated() const;
 	virtual void SetGroupColor(FLinearColor BaseColor, FLinearColor ActiveColor);
 
-protected:
-	bool bIsActivated = false;
 	FLinearColor CachedBaseColor = FLinearColor::White;
 	FLinearColor CachedActiveColor = FLinearColor::White;
+
+protected:
+	bool bIsActivated = false;
 
 	UPROPERTY(VisibleAnywhere, Category = "Mechanism")
 	UStaticMeshComponent* MeshComp;

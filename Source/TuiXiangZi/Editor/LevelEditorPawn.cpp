@@ -1,6 +1,7 @@
 #include "Editor/LevelEditorPawn.h"
 #include "Grid/GridManager.h"
 #include "Editor/LevelEditorGameMode.h"
+#include "Editor/EditorBrushTypes.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -149,6 +150,15 @@ void ALevelEditorPawn::OnLeftClickCompleted(const FInputActionValue& Value)
 
 void ALevelEditorPawn::OnRightClickStarted(const FInputActionValue& Value)
 {
+    // In plate placement mode, right-click cancels (returns to Normal)
+    ALevelEditorGameMode* EditorGM = Cast<ALevelEditorGameMode>(
+        UGameplayStatics::GetGameMode(GetWorld()));
+    if (EditorGM && EditorGM->GetEditorMode() != EEditorMode::Normal)
+    {
+        EditorGM->CancelPlacementMode();
+        return;
+    }
+
     bIsErasing = true;
     bHasLastPaintedPos = false;
     HandleErasing();

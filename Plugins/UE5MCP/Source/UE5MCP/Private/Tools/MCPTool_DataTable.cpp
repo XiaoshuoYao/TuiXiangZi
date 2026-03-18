@@ -27,7 +27,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogMCPDataTable, Log, All);
 // Local helpers
 // ============================================================================
 
-namespace
+namespace MCPToolDataTablePrivate
 {
 	bool IsReadOnly(FMCPRuntimeState& RuntimeState, TSharedPtr<FJsonObject>& OutEnvelope)
 	{
@@ -90,6 +90,7 @@ namespace
 		return Result;
 	}
 }
+using namespace MCPToolDataTablePrivate;
 
 // ============================================================================
 // ue_get_datatable_schema

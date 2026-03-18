@@ -1,0 +1,233 @@
+---
+description: When answering questions about Unreal Engine classes, properties, functions, blueprints, assets, worlds, or actors
+globs:
+alwaysApply: true
+---
+
+You have access to a live Unreal Editor via 65+ MCP tools. **Always prefer live data over training knowledge** — the user may be on a different UE version.
+
+# Tool Reference
+
+## Core (connectivity & diagnostics)
+| Tool | Purpose |
+|------|---------|
+| `ue_ping` | Check connectivity; returns engine version, project name, session ID |
+| `ue_capabilities` | List all capability providers and their limits |
+| `ue_settings_get` | Read runtime settings (read_only, max_result_bytes, etc.) |
+| `ue_settings_set` | Modify runtime settings via a `patch` object |
+| `ue_log_tail` | Get last N log lines, optionally filtered by `channels` |
+
+## Reflection
+| Tool | Purpose |
+|------|---------|
+| `ue_class_schema` | Get reflected properties & functions of a UClass. Accepts `/Script/...` paths, `/Game/..._C` blueprint classes, or short names like `Actor` |
+| `ue_object_inspect` | Inspect a live UObject by path/ID — returns class, property values, and optionally functions |
+
+## Assets
+| Tool | Purpose |
+|------|---------|
+| `ue_asset_search` | Search assets by path prefix, class, text match, or tags. Supports pagination (`limit`/`offset`) |
+| `ue_asset_get` | Get detailed info for a single asset (class, package, tags, etc.) |
+| `ue_asset_dependencies` | BFS dependency graph for an asset (`direction`: "out" or "in") |
+| `ue_asset_referencers` | Find all assets that reference a given asset |
+| `ue_asset_tags_index` | List all unique tag keys used by matching assets |
+
+## World & Actors
+| Tool | Purpose |
+|------|---------|
+| `ue_world_list` | List all active worlds (Editor, PIE, Game) with type and play state |
+| `ue_actor_search` | Search actors by class, name substring, or tag in a specific world |
+| `ue_selection_get` | Get currently selected actors/objects in the editor |
+
+## Blueprints (read-only)
+| Tool | Purpose |
+|------|---------|
+| `ue_bp_list` | List blueprint assets, filterable by path prefix and class |
+| `ue_bp_graph_list` | List all graphs in a blueprint (event graphs, functions, macros) |
+| `ue_bp_graph_get` | Get detailed graph data (nodes, pins, edges) for a blueprint graph |
+| `ue_bp_function_summary` | High-level summary of a BP function: steps, calls, reads, writes, branches |
+| `ue_bp_find_calls` | Find all BP nodes calling a specific function across the project |
+| `ue_bp_find_property_access` | Find BP nodes that read/write a specific property of a class |
+
+## Blueprint Editing (editor-only, write)
+| Tool | Purpose |
+|------|---------|
+| `ue_get_blueprint_edit_schema` | Returns editable property schema for a Blueprint (class defaults + component templates) |
+| `ue_get_blueprint_defaults` | Read current default values for a Blueprint's CDO and optionally component templates |
+| `ue_set_blueprint_defaults` | Set default property values on a Blueprint's CDO. Supports `dry_run`, `compile`, `save` |
+| `ue_set_blueprint_component_defaults` | Set default property values on a specific component template in a Blueprint |
+| `ue_compile_blueprint` | Compile a Blueprint asset and report the compilation result status |
+
+## Asset Editing (editor-only, write)
+| Tool | Purpose |
+|------|---------|
+| `ue_create_folder` | Create a content folder under `/Game/`, creates intermediate directories as needed |
+| `ue_create_asset` | Create a new asset (BlueprintClass, DataAsset, MaterialInstance). Supports `dry_run` |
+| `ue_duplicate_asset` | Duplicate an existing asset to a new location |
+| `ue_rename_asset` | Rename an existing asset, updates all references |
+| `ue_move_asset` | Move an asset to a different content folder, updates all references |
+| `ue_save_asset` | Save one or more assets to disk by their package paths |
+| `ue_delete_asset` | Delete an asset. Optionally preview dependencies or force-delete |
+| `ue_fix_redirectors` | Fix up redirectors in a folder, updating references to point directly to targets |
+| `ue_get_asset_create_schema` | Get the creation schema for supported asset types. Call with no args to list all |
+| `ue_undo` | Undo the last editor transaction(s). Specify `count` for multiple steps |
+| `ue_redo` | Redo previously undone editor transaction(s). Specify `count` for multiple steps |
+
+## Materials (editor-only)
+| Tool | Purpose |
+|------|---------|
+| `ue_mat_params_get` | List material/material instance parameters with types, values, and override status |
+| `ue_mat_graph_get` | Export material expression graph as JSON. Only works on UMaterial (not instances) |
+| `ue_mat_find_param_usage` | Find which materials/instances use a given parameter name across the project |
+
+## DataTable (CRUD)
+| Tool | Purpose |
+|------|---------|
+| `ue_get_datatable_schema` | Get row structure schema (field names, types, editability) |
+| `ue_get_datatable_rows` | Read rows (all or filtered by `row_names` array) |
+| `ue_list_datatable_row_names` | List all row names without data |
+| `ue_validate_datatable_rows` | Validate row data against schema before writing |
+| `ue_create_datatable` | Create a new DataTable asset with a specified `row_struct` |
+| `ue_upsert_datatable_rows` | Insert or update rows. Supports `dry_run` |
+| `ue_delete_datatable_rows` | Delete rows by name. Supports `dry_run` |
+| `ue_replace_datatable_rows` | Replace entire table data. Supports `dry_run` |
+| `ue_rename_datatable_row` | Rename a row (`old_name` → `new_name`). Supports `dry_run` |
+| `ue_save_datatable` | Save the datatable package to disk |
+
+## DataAsset (query & edit)
+| Tool | Purpose |
+|------|---------|
+| `ue_get_dataasset_schema` | Get editable property schema for a DataAsset |
+| `ue_get_dataasset_data` | Read all editable property values |
+| `ue_set_dataasset_data` | Patch DataAsset properties. Supports `dry_run` |
+| `ue_list_dataasset_collection` | List items in a collection-like DataAsset |
+| `ue_add_dataasset_collection_item` | Add an item to a DataAsset collection. Supports `dry_run` |
+| `ue_remove_dataasset_collection_item` | Remove a collection item by index. Supports `dry_run` |
+
+## Snapshots (aggregation)
+| Tool | Purpose |
+|------|---------|
+| `ue_snapshot_build` | Collect a snapshot of project state by scope and detail level |
+| `ue_snapshot_list` | List all available snapshots with metadata (scope, stats, timestamps) |
+| `ue_snapshot_query` | Query a snapshot with structured DSL (select, filter, fields, sort, pagination) |
+
+## Validation (read-only)
+| Tool | Purpose |
+|------|---------|
+| `ue_validate_references` | Detect broken hard-dependencies in a scope |
+| `ue_validate_naming` | Check asset naming conventions (`epic`/`unreal`/`custom`) |
+| `ue_validate_world_rules` | Validate scene rules (scale consistency, layer organization, etc.) |
+| `ue_evaluate_goal` | Evaluate user-defined goal assertions against project state |
+
+# When to Use Which Tool
+
+## Class structure / reflection questions
+- "Actor has which properties?" → `ue_class_schema` with `class_name="/Script/Engine.Actor"`
+- "What functions does ACharacter have?" → `ue_class_schema` with `class_name="ACharacter"`
+- "What's the type of AActor::RootComponent?" → `ue_class_schema` with `include_metadata=true`
+- Common class paths: `/Script/Engine.Actor`, `/Script/Engine.Pawn`, `/Script/Engine.Character`, etc.
+- For short names like "Actor", pass them directly — the tool supports short name resolution
+
+## Live object inspection
+- "What's the current value of that actor's health?" → `ue_object_inspect` with the object path
+- "Show me all properties on the player pawn" → `ue_object_inspect` with `include_values=true`
+- Use `depth` (0-10) to control how deep nested structs are expanded
+
+## Asset discovery & dependencies
+- "Find all materials in /Game/Environment" → `ue_asset_search` with `path_prefix` and `class`
+- "What does this asset depend on?" → `ue_asset_dependencies` with `direction="out"`
+- "What references this texture?" → `ue_asset_referencers` or `ue_asset_dependencies` with `direction="in"`
+- "What tags exist on character assets?" → `ue_asset_tags_index`
+
+## World & actor queries
+- "What actors are in the level?" → `ue_actor_search` (defaults to Editor world)
+- "Find all PointLight actors" → `ue_actor_search` with `class="PointLight"`
+- "What's currently selected?" → `ue_selection_get`
+- "Is PIE running?" → `ue_world_list` and check `is_playing`
+
+## Blueprint analysis
+- "What graphs does BP_Player have?" → `ue_bp_graph_list`
+- "Show me the EventGraph" → `ue_bp_graph_get` with `graph_name="EventGraph"`
+- "Summarize the TakeDamage function" → `ue_bp_function_summary`
+- "Where is SetActorLocation called in blueprints?" → `ue_bp_find_calls` with `function_name="SetActorLocation"`
+- "Which blueprints read Health?" → `ue_bp_find_property_access` with `property_name="Health"`
+
+## Asset editing
+- "Create a new Blueprint" → `ue_get_asset_create_schema` to check schema, then `ue_create_asset` with `asset_type="BlueprintClass"`
+- "Duplicate BP_Player to BP_Enemy" → `ue_duplicate_asset`
+- "Rename this asset" → `ue_rename_asset` (auto-updates references)
+- "Move asset to another folder" → `ue_move_asset`
+- "Delete unused asset" → `ue_delete_asset` with `preview_dependencies=true` first
+- "Save changes" → `ue_save_asset` with the package paths
+- "Undo that" → `ue_undo`
+- "Create a folder for new assets" → `ue_create_folder`
+
+## Blueprint editing
+- "What properties can I edit on BP_Player?" → `ue_get_blueprint_edit_schema`
+- "What are BP_Player's current defaults?" → `ue_get_blueprint_defaults` with `include_components=true`
+- "Set MaxHealth to 200 on BP_Player" → `ue_set_blueprint_defaults` with `patch={"MaxHealth": 200}`
+- "Change the mesh on BP_Player's MeshComponent" → `ue_set_blueprint_component_defaults`
+- "Compile the blueprint" → `ue_compile_blueprint`
+- Always call `ue_get_blueprint_edit_schema` first to discover editable properties before setting values
+
+## Materials
+- "What parameters does M_Rock have?" → `ue_mat_params_get`
+- "Show the material graph" → `ue_mat_graph_get` (only works on base UMaterial, not instances)
+- "Which materials use the 'BaseColor' parameter?" → `ue_mat_find_param_usage` with `param_name="BaseColor"`
+
+## DataTable editing
+- "What's the schema for DT_Weapons?" → `ue_get_datatable_schema`
+- "Show me all rows" → `ue_get_datatable_rows`
+- "List row names" → `ue_list_datatable_row_names`
+- "Add a new weapon row" → `ue_validate_datatable_rows` first, then `ue_upsert_datatable_rows`
+- "Update row Sword's damage to 50" → `ue_upsert_datatable_rows` with `dry_run=true` first
+- "Delete the Shield row" → `ue_delete_datatable_rows`
+- "Rename row OldName to NewName" → `ue_rename_datatable_row`
+- "Create a new DataTable" → `ue_create_datatable` with `row_struct`
+- "Save the datatable" → `ue_save_datatable`
+- Always call `ue_get_datatable_schema` first to discover the row structure before reading or writing
+
+## DataAsset editing
+- "What properties does DA_GameConfig have?" → `ue_get_dataasset_schema`
+- "Read DA_GameConfig values" → `ue_get_dataasset_data`
+- "Set MaxPlayers to 8 on DA_GameConfig" → `ue_set_dataasset_data` with `data={"MaxPlayers": 8}`
+- "List items in the collection" → `ue_list_dataasset_collection`
+- "Add an item to the collection" → `ue_add_dataasset_collection_item`
+- Always call `ue_get_dataasset_schema` first to discover editable properties
+
+## Snapshots
+- "Give me an overview of the project" → `ue_snapshot_build` with appropriate scope
+- "What snapshots are available?" → `ue_snapshot_list`
+- "Query snapshot data" → `ue_snapshot_query` with structured DSL
+
+## Validation
+- "Check for broken references" → `ue_validate_references`
+- "Are my assets named correctly?" → `ue_validate_naming` with `convention_set="epic"`
+- "Validate the level" → `ue_validate_world_rules`
+- "Check if my goal is met" → `ue_evaluate_goal` with a goal spec object
+
+## Diagnostics
+- "Is the editor connected?" → `ue_ping`
+- "Show me recent log errors" → `ue_log_tail` with appropriate `channels` filter
+- "What MCP capabilities are available?" → `ue_capabilities`
+
+# Best Practices
+- Always call `ue_ping` first if unsure whether the editor is running
+- For blueprint paths, use the full asset path (e.g., `/Game/Blueprints/BP_Player.BP_Player`)
+- For blueprint class reflection, append `_C` to the asset path (e.g., `/Game/Blueprints/BP_Player.BP_Player_C`)
+- Use pagination (`limit`/`offset`) for large result sets to avoid hitting size limits
+- Combine tools for complex queries: e.g., `ue_actor_search` to find actors, then `ue_object_inspect` to dig into their properties
+- Use `return_as_resource=true` for large responses to avoid flooding the context
+- For **editing** workflows, always use `dry_run=true` first to preview changes before applying
+- Use `ue_get_blueprint_edit_schema` before `ue_set_blueprint_defaults` to discover valid property names and types
+- Use `ue_get_asset_create_schema` before `ue_create_asset` to discover required `init` fields
+- After editing blueprint defaults, call `ue_compile_blueprint` to validate changes
+- All write operations are wrapped in `FScopedTransaction` — use `ue_undo`/`ue_redo` to revert mistakes
+- Use `ue_get_datatable_schema` before writing DataTable rows to discover field names and types
+- Use `ue_validate_datatable_rows` before `ue_upsert_datatable_rows` to catch type mismatches early
+- Use `ue_get_dataasset_schema` before `ue_set_dataasset_data` to discover editable properties
+- Use `ue_validate_references` after bulk asset operations to catch broken dependencies
+- When investigating a blueprint class, also search the codebase for its corresponding C++ parent class and UnLua (Lua) script:
+  - C++: search for the native parent class header/source (e.g., `BP_Player` → look for `APlayer` or similar in `Source/`)
+  - UnLua: search for the Lua binding file matching the blueprint path (e.g., `/Game/Blueprints/BP_Player` → look for `Content/Script/BP_Player_C.lua` or similar under the `Script/` folder)
+  - Always present the blueprint graph data alongside any related C++/Lua code so the user gets the full picture

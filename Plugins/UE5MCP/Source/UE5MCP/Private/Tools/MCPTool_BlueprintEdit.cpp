@@ -23,7 +23,7 @@
 // ============================================================================
 // Helpers
 // ============================================================================
-namespace
+namespace MCPToolBlueprintEditPrivate
 {
 	/** Load a blueprint by asset path. Returns nullptr on failure. */
 	UBlueprint* LoadBlueprintByPath(const FString& BpPath)
@@ -108,6 +108,7 @@ namespace
 		return UPackage::SavePackage(Package, Asset, *PackageFilename, SaveArgs);
 	}
 }
+using namespace MCPToolBlueprintEditPrivate;
 
 // ============================================================================
 // ue_get_blueprint_edit_schema (Task 10)

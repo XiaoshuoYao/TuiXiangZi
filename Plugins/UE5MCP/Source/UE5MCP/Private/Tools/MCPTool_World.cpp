@@ -21,7 +21,7 @@
 // ============================================================================
 // Helpers
 // ============================================================================
-namespace
+namespace MCPToolWorldPrivate
 {
 	/** Resolve a world parameter to a UWorld*. Supports type strings and world names. */
 	UWorld* ResolveWorld(const FString& WorldParam)
@@ -88,6 +88,7 @@ namespace
 		return nullptr;
 	}
 }
+using namespace MCPToolWorldPrivate;
 
 // ============================================================================
 // ue_object_inspect

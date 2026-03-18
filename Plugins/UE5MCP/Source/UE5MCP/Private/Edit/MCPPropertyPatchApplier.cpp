@@ -15,7 +15,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogMCPPatchApplier, Log, All);
 // Forward declarations for internal helpers
 // ============================================================================
 
-namespace
+namespace MCPPropertyPatchApplierPrivate
 {
 	bool WriteJsonToProperty(FProperty* Property, void* ContainerPtr, const TSharedPtr<FJsonValue>& JsonValue, FString& OutError);
 }
@@ -344,7 +344,7 @@ TSharedPtr<FJsonValue> MCPPropertyPatchApplier::ReadPropertyAsJson(
 // WriteJsonToProperty (internal helper)
 // ============================================================================
 
-namespace
+namespace MCPPropertyPatchApplierPrivate
 {
 	/**
 	 * Attempts to extract a double from a JSON value, handling both Number and String types.
@@ -819,7 +819,8 @@ namespace
 			*Property->GetClass()->GetName(), static_cast<int32>(JsonValue->Type));
 		return false;
 	}
-} // anonymous namespace
+} // namespace MCPPropertyPatchApplierPrivate
+using namespace MCPPropertyPatchApplierPrivate;
 
 // ============================================================================
 // ApplyPatch
