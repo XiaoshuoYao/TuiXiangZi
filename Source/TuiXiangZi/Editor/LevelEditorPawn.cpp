@@ -2,6 +2,7 @@
 #include "Grid/GridManager.h"
 #include "Editor/LevelEditorGameMode.h"
 #include "Editor/EditorBrushTypes.h"
+#include "UI/Editor/EditorMainWidget.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -52,6 +53,26 @@ void ALevelEditorPawn::BeginPlay()
             }
         }
     }
+
+    // Create Editor UI
+    if (MainWidgetClass)
+    {
+        APlayerController* PC = Cast<APlayerController>(GetController());
+        if (PC)
+        {
+            MainWidget = CreateWidget<UEditorMainWidget>(PC, MainWidgetClass);
+            if (MainWidget)
+            {
+                MainWidget->AddToViewport(0);
+            }
+
+            // Set input mode: game and UI coexist
+            FInputModeGameAndUI InputMode;
+            InputMode.SetHideCursorDuringCapture(false);
+            PC->SetInputMode(InputMode);
+            PC->SetShowMouseCursor(true);
+        }
+    }
 }
 
 void ALevelEditorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -80,6 +101,33 @@ void ALevelEditorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
             EnhancedInput->BindAction(MouseWheelAction, ETriggerEvent::Triggered, this, &ALevelEditorPawn::OnMouseWheel);
         }
     }
+
+    // Keyboard shortcuts (traditional BindKey, coexists with EnhancedInput)
+    PlayerInputComponent->BindKey(EKeys::One,   IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush1);
+    PlayerInputComponent->BindKey(EKeys::Two,   IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush2);
+    PlayerInputComponent->BindKey(EKeys::Three, IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush3);
+    PlayerInputComponent->BindKey(EKeys::Four,  IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush4);
+    PlayerInputComponent->BindKey(EKeys::Five,  IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush5);
+    PlayerInputComponent->BindKey(EKeys::Six,   IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush6);
+    PlayerInputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush7);
+    PlayerInputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush8);
+    PlayerInputComponent->BindKey(EKeys::E,     IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrushEraser);
+
+    PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ALevelEditorPawn::HandleShortcutEsc);
+    PlayerInputComponent->BindKey(EKeys::F5,     IE_Pressed, this, &ALevelEditorPawn::HandleShortcutTest);
+
+    // Ctrl+key combos: use FInputChord via BindKey
+    FInputKeyBinding& BindNew = PlayerInputComponent->KeyBindings.Add_GetRef(
+        FInputKeyBinding(FInputChord(EKeys::N, false, true, false, false), IE_Pressed));
+    BindNew.KeyDelegate.GetDelegateForManualSet().BindUObject(this, &ALevelEditorPawn::HandleShortcutNew);
+
+    FInputKeyBinding& BindSave = PlayerInputComponent->KeyBindings.Add_GetRef(
+        FInputKeyBinding(FInputChord(EKeys::S, false, true, false, false), IE_Pressed));
+    BindSave.KeyDelegate.GetDelegateForManualSet().BindUObject(this, &ALevelEditorPawn::HandleShortcutSave);
+
+    FInputKeyBinding& BindLoad = PlayerInputComponent->KeyBindings.Add_GetRef(
+        FInputKeyBinding(FInputChord(EKeys::O, false, true, false, false), IE_Pressed));
+    BindLoad.KeyDelegate.GetDelegateForManualSet().BindUObject(this, &ALevelEditorPawn::HandleShortcutLoad);
 }
 
 void ALevelEditorPawn::Tick(float DeltaTime)
@@ -168,6 +216,8 @@ void ALevelEditorPawn::OnRightClickCompleted(const FInputActionValue& Value)
 {
     bIsErasing = false;
     bHasLastPaintedPos = false;
+    bEraseConfirmPending = false;
+    bHasLastErasedPos = false;
 }
 
 void ALevelEditorPawn::OnMiddleClickStarted(const FInputActionValue& Value)
@@ -198,6 +248,8 @@ void ALevelEditorPawn::OnMouseWheel(const FInputActionValue& Value)
 
 void ALevelEditorPawn::HandlePainting()
 {
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+
     FIntPoint GridPos;
     if (!RaycastToGrid(GridPos)) return;
 
@@ -211,29 +263,50 @@ void ALevelEditorPawn::HandlePainting()
     if (EditorGM)
     {
         EditorGM->PaintAtGrid(GridPos);
+
+        if (MainWidget) MainWidget->RefreshStats();
     }
 }
 
 void ALevelEditorPawn::HandleErasing()
 {
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+
     FIntPoint GridPos;
     if (!RaycastToGrid(GridPos)) return;
 
-    if (bHasLastPaintedPos && LastPaintedGridPos == GridPos) return;
-
-    LastPaintedGridPos = GridPos;
-    bHasLastPaintedPos = true;
-
     ALevelEditorGameMode* EditorGM = Cast<ALevelEditorGameMode>(
         UGameplayStatics::GetGameMode(GetWorld()));
-    if (EditorGM)
+    if (!EditorGM) return;
+
+    // Check if this cell requires erase confirmation (e.g. Door)
+    if (EditorGM->ShouldConfirmErase(GridPos))
     {
-        EditorGM->EraseAtGrid(GridPos);
+        if (!bEraseConfirmPending)
+        {
+            bEraseConfirmPending = true;
+            if (MainWidget)
+            {
+                MainWidget->RequestEraseConfirm(GridPos);
+            }
+        }
+        return;
     }
+
+    // Normal erase with dedup
+    if (bHasLastErasedPos && LastErasedGridPos == GridPos) return;
+
+    EditorGM->EraseAtGrid(GridPos);
+    LastErasedGridPos = GridPos;
+    bHasLastErasedPos = true;
+
+    if (MainWidget) MainWidget->RefreshStats();
 }
 
 void ALevelEditorPawn::HandlePanning(float DeltaTime)
 {
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+
     APlayerController* PC = Cast<APlayerController>(GetController());
     if (!PC || !EditorCamera) return;
 
@@ -258,4 +331,58 @@ void ALevelEditorPawn::HandlePanning(float DeltaTime)
     FVector NewLocation = PanStartActorLocation + WorldDelta;
     NewLocation.Z = GetActorLocation().Z;
     SetActorLocation(NewLocation);
+}
+
+// ===== Keyboard Shortcut Handlers =====
+
+void ALevelEditorPawn::TrySetBrush(EEditorBrush Brush)
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+
+    ALevelEditorGameMode* GM = Cast<ALevelEditorGameMode>(GetWorld()->GetAuthGameMode());
+    if (GM && GM->GetEditorMode() != EEditorMode::Normal) return;
+
+    if (MainWidget) MainWidget->RequestSetBrush(Brush);
+}
+
+void ALevelEditorPawn::HandleKeyBrush1()     { TrySetBrush(EEditorBrush::Floor); }
+void ALevelEditorPawn::HandleKeyBrush2()     { TrySetBrush(EEditorBrush::Wall); }
+void ALevelEditorPawn::HandleKeyBrush3()     { TrySetBrush(EEditorBrush::Ice); }
+void ALevelEditorPawn::HandleKeyBrush4()     { TrySetBrush(EEditorBrush::Goal); }
+void ALevelEditorPawn::HandleKeyBrush5()     { TrySetBrush(EEditorBrush::Door); }
+void ALevelEditorPawn::HandleKeyBrush6()     { TrySetBrush(EEditorBrush::PressurePlate); }
+void ALevelEditorPawn::HandleKeyBrush7()     { TrySetBrush(EEditorBrush::BoxSpawn); }
+void ALevelEditorPawn::HandleKeyBrush8()     { TrySetBrush(EEditorBrush::PlayerStart); }
+void ALevelEditorPawn::HandleKeyBrushEraser(){ TrySetBrush(EEditorBrush::Eraser); }
+
+void ALevelEditorPawn::HandleShortcutNew()
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+    if (MainWidget) MainWidget->RequestToolbarAction(EToolbarAction::New);
+}
+
+void ALevelEditorPawn::HandleShortcutSave()
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+    if (MainWidget) MainWidget->RequestToolbarAction(EToolbarAction::Save);
+}
+
+void ALevelEditorPawn::HandleShortcutLoad()
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+    if (MainWidget) MainWidget->RequestToolbarAction(EToolbarAction::Load);
+}
+
+void ALevelEditorPawn::HandleShortcutTest()
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+    if (MainWidget) MainWidget->RequestToolbarAction(EToolbarAction::Test);
+}
+
+void ALevelEditorPawn::HandleShortcutEsc()
+{
+    if (MainWidget)
+    {
+        MainWidget->HandleEscPressed();
+    }
 }

@@ -2,6 +2,7 @@
 #include "Editor/LevelEditorPawn.h"
 #include "Editor/EditorGridVisualizer.h"
 #include "Grid/GridManager.h"
+#include "Grid/TileStyleCatalog.h"
 #include "Grid/GridTypes.h"
 #include "LevelData/LevelDataTypes.h"
 #include "LevelData/LevelSerializer.h"
@@ -116,6 +117,7 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     {
         FGridCell Cell;
         Cell.CellType = BrushToCellType(CurrentBrush);
+        Cell.VisualStyleId = CurrentVisualStyleId;
         GridManagerRef->SetCell(Pos, Cell);
         break;
     }
@@ -127,6 +129,7 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
         FGridCell Cell;
         Cell.CellType = EGridCellType::Door;
         Cell.GroupId = NewGroupId;
+        Cell.VisualStyleId = CurrentVisualStyleId;
         GridManagerRef->SetCell(Pos, Cell);
 
         // Enter plate placement mode for this group
@@ -140,6 +143,7 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
         FGridCell Cell;
         Cell.CellType = EGridCellType::PressurePlate;
         Cell.GroupId = CurrentGroupId;
+        Cell.VisualStyleId = CurrentVisualStyleId;
         GridManagerRef->SetCell(Pos, Cell);
         break;
     }
@@ -177,6 +181,7 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     }
     }
 
+    bIsDirty = true;
     UpdateGridVisualizerBounds();
 }
 
@@ -248,6 +253,7 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
                     PlayerStartMarker = nullptr;
                 }
             }
+            bIsDirty = true;
             UpdateGridVisualizerBounds();
             return;
         }
@@ -271,6 +277,7 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
         }
     }
 
+    bIsDirty = true;
     UpdateGridVisualizerBounds();
 }
 
@@ -415,6 +422,7 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
     // Place default player start marker
     SpawnPlayerStartMarker(PlayerStartPos);
 
+    bIsDirty = false;
     UpdateGridVisualizerBounds();
 }
 
@@ -446,7 +454,12 @@ bool ALevelEditorGameMode::SaveLevel(const FString& FileName)
         FilePath += TEXT(".json");
     }
 
-    return ULevelSerializer::SaveToJson(Data, FilePath);
+    if (ULevelSerializer::SaveToJson(Data, FilePath))
+    {
+        bIsDirty = false;
+        return true;
+    }
+    return false;
 }
 
 bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
@@ -512,6 +525,7 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
     }
 
     UpdateGridVisualizerBounds();
+    bIsDirty = false;
     return true;
 }
 
@@ -538,6 +552,7 @@ int32 ALevelEditorGameMode::CreateNewGroup()
     GroupStyles.Add(NewGroup);
 
     CurrentGroupId = MaxGroupId;
+    bIsDirty = true;
     OnGroupCreated.Broadcast(MaxGroupId);
     return MaxGroupId;
 }
@@ -578,6 +593,7 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
     // Remove from GroupStyles
     GroupStyles.RemoveAll([GroupId](const FMechanismGroupStyleData& GS) { return GS.GroupId == GroupId; });
 
+    bIsDirty = true;
     OnGroupDeleted.Broadcast(GroupId);
     UpdateGridVisualizerBounds();
 }
@@ -609,9 +625,20 @@ void ALevelEditorGameMode::SetGroupColor(int32 GroupId, FLinearColor BaseColor, 
         {
             GS.BaseColor = BaseColor;
             GS.ActiveColor = ActiveColor;
+            bIsDirty = true;
             return;
         }
     }
+}
+
+void ALevelEditorGameMode::SetCurrentVisualStyleId(FName NewStyleId)
+{
+    CurrentVisualStyleId = NewStyleId;
+}
+
+UTileStyleCatalog* ALevelEditorGameMode::GetTileStyleCatalog() const
+{
+    return GridManagerRef ? GridManagerRef->TileStyleCatalog : nullptr;
 }
 
 int32 ALevelEditorGameMode::CountPlatesForGroup(int32 GroupId) const

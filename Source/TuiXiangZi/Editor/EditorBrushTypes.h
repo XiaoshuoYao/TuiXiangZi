@@ -24,3 +24,20 @@ enum class EEditorMode : uint8
     PlacingPlatesForDoor,
     EditingDoorGroup
 };
+
+UENUM(BlueprintType)
+enum class EValidationContext : uint8
+{
+    Save,
+    Test
+};
+
+UENUM(BlueprintType)
+enum class EToolbarAction : uint8
+{
+    New,
+    Save,
+    Load,
+    Test,
+    Back
+};

@@ -169,7 +169,8 @@ HandleGroupDeleted(int32 GroupId):
 
 SetActiveBrush(EEditorBrush Brush):
   ├─ 遍历所有按钮，取消高亮
-  └─ 找到匹配的按钮，添加高亮边框（选中态：亮蓝色边框 + 浅蓝色背景）
+  ├─ 找到匹配的按钮，添加高亮边框（选中态：亮蓝色边框 + 浅蓝色背景）
+  └─ 刷新 Variant 子面板（见下文）
 
 SetEnabled(bool bEnabled):
   ├─ true:  所有按钮恢复交互，正常颜色
@@ -177,33 +178,199 @@ SetEnabled(bool bEnabled):
       （PlacingPlatesForDoor 模式下，不允许切换笔刷）
 ```
 
-**特殊交互 — Door 笔刷：**
+#### Variant 选择（样式变体）
+
+**数据来源：** `UTileStyleCatalog` DataAsset（`DA_DefaultTileStyles`），每个 `FTileVisualStyle` 包含：
+- `StyleId (FName)` — 唯一标识，如 `"stone_floor"`, `"brick_wall"`
+- `DisplayName (FString)` — UI 显示名
+- `ApplicableType (EGridCellType)` — 适用的格子类型
+- `Mesh / Material` — 视觉资源
+- `Thumbnail (UTextureRenderTarget2D)` — 自动生成的缩略图（128×128）
+
+**查询方式：** `TileStyleCatalog->GetStylesForType(CellType)` 返回该类型所有可用变体。
+
+**映射关系：** `EEditorBrush` → `EGridCellType`
+| Brush | CellType | 说明 |
+|-------|----------|------|
+| Floor | Floor | 可有多种地板样式 |
+| Wall | Wall | 可有多种墙壁样式 |
+| Ice | Ice | 可有多种冰面样式 |
+| Goal | Goal | 可有多种目标样式 |
+| Door | Door | 可有多种门样式 |
+| PressurePlate | PressurePlate | 可有多种压力板样式 |
+| BoxSpawn | — | 无变体（仅标记生成位置） |
+| PlayerStart | — | 无变体（仅标记生成位置） |
+| Eraser | — | 无变体 |
+
+**布局 — Variant 子面板：** 位于笔刷按钮列表下方，选中笔刷后展开
+```
+┌──────── 笔刷面板 ────────┐
+│ [▣ 地板] [1]             │  ← 选中态
+│ [ 墙壁 ] [2]             │
+│ [ 冰面 ] [3]             │
+│ ...                      │
+├─────── 样式变体 ──────────┤
+│ ┌────┐ ┌────┐ ┌────┐    │
+│ │ 缩 │ │ 缩 │ │ 缩 │    │  ← 缩略图网格（2列）
+│ │ 略 │ │ 略 │ │ 略 │    │
+│ │ 图 │ │ 图 │ │ 图 │    │
+│ ├────┤ ├────┤ ├────┤    │
+│ │石板 │ │木板 │ │泥地 │    │  ← DisplayName
+│ └────┘ └────┘ └────┘    │
+│ ┌────┐                   │
+│ │默认 │  ← 第一个=默认    │
+│ └────┘                   │
+└──────────────────────────┘
+```
+
+**交互逻辑：**
+```
+笔刷切换时 (SetActiveBrush):
+  ├─ 将 EEditorBrush 映射到 EGridCellType
+  ├─ 调用 TileStyleCatalog->GetStylesForType(CellType)
+  ├─ if 返回 0 个或 1 个变体:
+  │   └─ 隐藏 Variant 子面板（BoxSpawn/PlayerStart/Eraser，或该类型只有默认样式）
+  ├─ if 返回 ≥2 个变体:
+  │   ├─ 显示 Variant 子面板
+  │   ├─ 为每个变体创建缩略图按钮（使用 Thumbnail 纹理）
+  │   ├─ 默认选中第一个变体（或恢复上次选择，见下文）
+  │   └─ 下方显示 DisplayName 文字标签
+  └─ 设置当前 VisualStyleId = 选中变体的 StyleId
+
+用户点击变体缩略图:
+  ├─ 高亮选中的缩略图（亮蓝色边框，与笔刷按钮选中态一致）
+  ├─ 更新当前 VisualStyleId
+  ├─ 广播 OnVariantSelected(FName StyleId)
+  └─ MainWidget 收到后 → GameMode->SetCurrentVisualStyleId(StyleId)
+      └─ 后续 PaintAtGrid 时，Cell.VisualStyleId = CurrentVisualStyleId
+
+记忆上次选择（per-brush）:
+  ├─ Sidebar 内部维护 TMap<EEditorBrush, FName> LastSelectedVariant
+  ├─ 切换笔刷时，检查该 brush 是否有记忆
+  │   ├─ 有 → 恢复上次选择的变体
+  │   └─ 无 → 默认选第一个（StyleId = NAME_None 表示使用类型默认）
+  └─ 用户选择变体时 → 更新 Map
+
+缩略图悬浮提示:
+  └─ Tooltip 显示 DisplayName（防止名字过长被截断）
+
+仅 1 个变体时的行为:
+  └─ 隐藏子面板，VisualStyleId 自动设为 NAME_None（由 ResolveTileVisual fallback 处理）
+```
+
+**需要新增的 GameMode 接口：**
+```cpp
+// 新增属性
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+FName CurrentVisualStyleId = NAME_None;
+
+// 新增方法
+UFUNCTION(BlueprintCallable)
+void SetCurrentVisualStyleId(FName NewStyleId);
+
+UFUNCTION(BlueprintCallable)
+FName GetCurrentVisualStyleId() const;
+
+// 新增 Delegate（可选，仅当需要 UI 联动时）
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVisualStyleChanged, FName, NewStyleId);
+UPROPERTY(BlueprintAssignable)
+FOnVisualStyleChanged OnVisualStyleChanged;
+```
+
+**PaintAtGrid 修改：**
+```
+GameMode->PaintAtGrid(Pos):
+  ├─ 原有逻辑: 创建 FGridCell, 设置 CellType
+  ├─ 新增: Cell.VisualStyleId = CurrentVisualStyleId
+  └─ GridManager->SetCell(Pos, Cell) → SpawnOrUpdateVisualActor 使用 ResolveTileVisual
+```
+
+**特殊交互 — Door 笔刷（完整流程）：**
 ```
 用户选择 Door 笔刷:
   └─ 正常流程（SetCurrentBrush → Door）
 
 用户在 Viewport 点击放置 Door:
   └─ GameMode.PaintAtGrid() 内部:
-      ├─ CreateNewGroup() → 创建新分组
+      ├─ CreateNewGroup() → 创建新分组（自动分配预设颜色）
       ├─ SetEditorMode(PlacingPlatesForDoor) → 进入压力板放置模式
       └─ 广播 OnEditorModeChanged + OnGroupCreated
 
 此时 UI 反应:
   ├─ Sidebar 被禁用（灰色）
   ├─ StatusBar 显示 "放置压力板模式 — 右键结束"
-  └─ GroupManager 新增一个分组条目
+  └─ GroupManager 新增一个分组条目（使用自动分配的预设颜色）
 
-用户右键:
+用户放置压力板（左键点击 Floor 格子）:
+  └─ GameMode.HandlePlateModePaint() → 放置 PressurePlate，GroupId = CurrentGroupId
+      └─ 该压力板和门共享同一分组颜色
+
+用户右键结束放置:
   └─ Pawn 检测到 PlacingPlatesForDoor 模式 → 调用 CancelPlacementMode()
       └─ 恢复 Normal 模式 → Sidebar 重新启用
 ```
 
-**特殊交互 — PressurePlate 笔刷：**
+#### 分组颜色设置 — 三种途径
+
+**途径 1：自动预设颜色（创建时）**
+```
+CreateNewGroup() 内部:
+  └─ 从预设调色板按顺序分配颜色
+      调色板: [红, 蓝, 绿, 紫, 橙, 青] 循环
+      ├─ BaseColor  = 调色板颜色
+      └─ ActiveColor = BaseColor * 1.3 亮度
+      → 多数情况下预设颜色已足够区分，用户无需手动修改
+```
+
+**途径 2：放置完成后在 GroupManager 中修改**
+```
+用户右键结束压力板放置 → 回到 Normal 模式
+  └─ 在右侧 GroupManager 面板中:
+      ├─ 找到刚创建的分组条目（自动高亮最新创建的分组）
+      ├─ 点击该条目的 [🎨] 调色板按钮
+      └─ 打开 ColorPickerPopup:
+          ├─ 初始颜色 = 当前 BaseColor（预设的）
+          ├─ 用户通过 HSV 平面 / H 滑条 / HEX 输入 选择新颜色
+          ├─ ActiveColor 自动 = 新 BaseColor * 1.3 亮度
+          └─ 点击 "应用":
+              └─ GameMode->SetGroupColor(GroupId, NewBase, NewActive)
+                  └─ Viewport 中门和压力板立即更新为新颜色
+```
+
+**途径 3：随时在 GroupManager 中修改已有分组**
+```
+任何时候（Normal 模式下）:
+  ├─ 用户在 GroupManager 中找到目标分组
+  ├─ 点击 [🎨] → 打开 ColorPickerPopup
+  └─ 同途径 2 的 ColorPicker 流程
+      └─ 修改会立即反映到 Viewport 中所有属于该分组的门和压力板
+```
+
+**PlacingPlatesForDoor 模式下的颜色修改限制：**
+```
+正在放置压力板时:
+  ├─ GroupManager 中当前分组条目的 [🎨] 按钮仍可点击
+  │   └─ 允许用户在放置过程中调整颜色（即时预览效果）
+  ├─ 但其他分组的 [🎨] 按钮被禁用
+  │   └─ 防止用户在放置模式中切换到无关分组
+  └─ 弹出 ColorPicker 时:
+      ├─ 不退出放置模式
+      ├─ Viewport 输入被遮罩阻挡（弹窗规则）
+      └─ 关闭 ColorPicker 后继续放置压力板
+```
+
+**特殊交互 — PressurePlate 笔刷（在 Normal 模式下手动放置）：**
 ```
 用户选择 PressurePlate 笔刷（在 Normal 模式下）:
   ├─ 如果没有任何分组 → 提示 "请先放置一扇门"（通过 StatusBar 或 Toast）
-  └─ 如果有分组 → 需要先在 GroupManager 中选择目标分组
-      └─ 设置 CurrentGroupId 后才能放置
+  └─ 如果有分组:
+      ├─ 需要先在 GroupManager 中选择目标分组（点击条目行）
+      │   └─ 选中后 CurrentGroupId 被设置，条目高亮
+      ├─ 如果未选择分组就直接点击 Viewport:
+      │   └─ StatusBar 提示 "请先在右侧面板中选择一个分组"
+      └─ 选中分组后点击 Viewport:
+          └─ PaintAtGrid → 放置 PressurePlate，使用该分组的颜色
+              └─ 该压力板颜色与所选分组的门一致
 ```
 
 ---

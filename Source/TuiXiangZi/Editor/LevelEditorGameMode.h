@@ -9,6 +9,7 @@
 
 class AGridManager;
 class AEditorGridVisualizer;
+class UTileStyleCatalog;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBrushChanged, EEditorBrush, NewBrush);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEditorModeChanged, EEditorMode, NewMode);
@@ -123,6 +124,20 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Editor")
     int32 GetGroupCount() const { return GroupStyles.Num(); }
 
+    // ===== Dirty Flag =====
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    bool IsDirty() const { return bIsDirty; }
+
+    // ===== Visual Style =====
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    void SetCurrentVisualStyleId(FName NewStyleId);
+
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    FName GetCurrentVisualStyleId() const { return CurrentVisualStyleId; }
+
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    UTileStyleCatalog* GetTileStyleCatalog() const;
+
     // ===== Delegates =====
     UPROPERTY(BlueprintAssignable, Category = "Editor")
     FOnBrushChanged OnBrushChanged;
@@ -144,6 +159,11 @@ public:
     TArray<FIntPoint> BoxSpawnPositions;
 
 protected:
+    bool bIsDirty = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Editor")
+    FName CurrentVisualStyleId = NAME_None;
+
     UPROPERTY()
     AGridManager* GridManagerRef;
 

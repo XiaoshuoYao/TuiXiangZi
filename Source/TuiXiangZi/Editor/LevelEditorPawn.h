@@ -2,12 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Editor/EditorBrushTypes.h"
 #include "LevelEditorPawn.generated.h"
 
 class UCameraComponent;
 class AGridManager;
 class UInputMappingContext;
 class UInputAction;
+class UEditorMainWidget;
 struct FInputActionValue;
 
 UCLASS(Blueprintable)
@@ -55,6 +57,13 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     UInputAction* MouseWheelAction;
 
+    // ===== UI =====
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UEditorMainWidget> MainWidgetClass;
+
+    UPROPERTY()
+    UEditorMainWidget* MainWidget = nullptr;
+
     // ===== Input State =====
     bool bIsPainting = false;
     bool bIsErasing = false;
@@ -64,6 +73,10 @@ protected:
 
     FIntPoint LastPaintedGridPos;
     bool bHasLastPaintedPos = false;
+
+    FIntPoint LastErasedGridPos;
+    bool bHasLastErasedPos = false;
+    bool bEraseConfirmPending = false;
 
     // ===== References =====
     UPROPERTY()
@@ -81,4 +94,23 @@ protected:
     void HandlePainting();
     void HandleErasing();
     void HandlePanning(float DeltaTime);
+
+    // ===== Keyboard Shortcuts =====
+    void HandleKeyBrush1();
+    void HandleKeyBrush2();
+    void HandleKeyBrush3();
+    void HandleKeyBrush4();
+    void HandleKeyBrush5();
+    void HandleKeyBrush6();
+    void HandleKeyBrush7();
+    void HandleKeyBrush8();
+    void HandleKeyBrushEraser();
+    void HandleShortcutNew();
+    void HandleShortcutSave();
+    void HandleShortcutLoad();
+    void HandleShortcutTest();
+    void HandleShortcutEsc();
+
+    /** Helper: attempt to set brush via MainWidget, respecting dialog/mode guards. */
+    void TrySetBrush(EEditorBrush Brush);
 };
