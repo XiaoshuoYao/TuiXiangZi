@@ -5,7 +5,6 @@
 #include "LevelData/LevelDataTypes.h"
 #include "GroupManagerPanel.generated.h"
 
-class UButton;
 class UScrollBox;
 class UTextBlock;
 class UGroupEntryWidget;
@@ -51,14 +50,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnGroupManagerAction OnDeleteGroup;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRequestNewGroup);
-
-	UPROPERTY(BlueprintAssignable)
-	FOnRequestNewGroup OnRequestNewGroup;
-
 protected:
-	UPROPERTY(meta = (BindWidget))
-	UButton* NewGroupButton;
 
 	UPROPERTY(meta = (BindWidget))
 	UScrollBox* GroupList;
@@ -75,9 +67,6 @@ protected:
 	int32 CurrentActiveGroupId = 0;
 
 	virtual void NativeConstruct() override;
-
-	UFUNCTION()
-	void HandleNewGroupClicked();
 
 	UFUNCTION()
 	void HandleEntryRowClicked(int32 GroupId);

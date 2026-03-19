@@ -7,6 +7,8 @@
 #include "EditorToolbarWidget.h"
 #include "GroupManagerPanel.h"
 #include "ColorPickerPopup.h"
+#include "LoadLevelDialog.h"
+#include "SaveLevelDialog.h"
 #include "Editor/LevelEditorGameMode.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -60,7 +62,6 @@ void UEditorMainWidget::NativeConstruct()
 		GroupManager->OnSelectGroup.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrSelectGroup);
 		GroupManager->OnEditGroupColor.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrEditColor);
 		GroupManager->OnDeleteGroup.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrDeleteGroup);
-		GroupManager->OnRequestNewGroup.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrNewGroup);
 	}
 
 	// 4. Initialize dialog layer
@@ -219,7 +220,7 @@ void UEditorMainWidget::HandleToolbarSave()
 	}
 	else
 	{
-		DoSave();
+		ShowSaveLevelDialog();
 	}
 }
 
@@ -233,17 +234,11 @@ void UEditorMainWidget::HandleToolbarLoad()
 			NSLOCTEXT("Editor", "UnsavedTitle", "未保存的更改"),
 			NSLOCTEXT("Editor", "UnsavedLoadMsg", "当前关卡有未保存的更改，继续将丢失这些更改。"),
 			NSLOCTEXT("Editor", "Continue", "继续"),
-			[this]()
-			{
-				// TODO: Show load file list / file browser
-				// For now, load a fixed file name
-				DoLoad(TEXT("DefaultLevel"));
-			});
+			[this]() { ShowLoadLevelDialog(); });
 	}
 	else
 	{
-		// TODO: Show load file list / file browser
-		DoLoad(TEXT("DefaultLevel"));
+		ShowLoadLevelDialog();
 	}
 }
 
@@ -309,15 +304,6 @@ void UEditorMainWidget::HandleGroupMgrDeleteGroup(int32 GroupId)
 			FText::FromString(Style.DisplayName)),
 		NSLOCTEXT("Editor", "Delete", "删除"),
 		[this, GroupId]() { GameMode->DeleteGroup(GroupId); });
-}
-
-void UEditorMainWidget::HandleGroupMgrNewGroup()
-{
-	if (GameMode)
-	{
-		GameMode->CreateNewGroup();
-		// OnGroupCreated delegate -> HandleGroupCreated will add the entry automatically
-	}
 }
 
 // ============================================================
@@ -419,10 +405,22 @@ void UEditorMainWidget::HandleColorPickerConfirmed(int32 InGroupId, FLinearColor
 	CloseDialog();
 }
 
+void UEditorMainWidget::HandleSaveLevelConfirmed(const FString& FileName)
+{
+	CloseDialog();
+	DoSave(FileName);
+}
+
+void UEditorMainWidget::HandleLoadLevelConfirmed(const FString& FileName)
+{
+	CloseDialog();
+	DoLoad(FileName);
+}
+
 void UEditorMainWidget::HandleValidationForceConfirmed()
 {
 	CloseDialog();
-	DoSave();
+	ShowSaveLevelDialog();
 }
 
 void UEditorMainWidget::HandleValidationClosed()
@@ -543,6 +541,34 @@ void UEditorMainWidget::ShowNewLevelDialog()
 	ShowDialog(Dialog);
 }
 
+void UEditorMainWidget::ShowSaveLevelDialog()
+{
+	if (!SaveLevelDialogClass) return;
+
+	USaveLevelDialog* Dialog = CreateWidget<USaveLevelDialog>(this, SaveLevelDialogClass);
+	if (!Dialog) return;
+
+	Dialog->Setup();
+	Dialog->OnConfirmed.AddDynamic(this, &UEditorMainWidget::HandleSaveLevelConfirmed);
+	Dialog->OnCancelled.AddDynamic(this, &UEditorMainWidget::HandleConfirmDialogCancelled);
+
+	ShowDialog(Dialog);
+}
+
+void UEditorMainWidget::ShowLoadLevelDialog()
+{
+	if (!LoadLevelDialogClass) return;
+
+	ULoadLevelDialog* Dialog = CreateWidget<ULoadLevelDialog>(this, LoadLevelDialogClass);
+	if (!Dialog) return;
+
+	Dialog->Setup();
+	Dialog->OnConfirmed.AddDynamic(this, &UEditorMainWidget::HandleLoadLevelConfirmed);
+	Dialog->OnCancelled.AddDynamic(this, &UEditorMainWidget::HandleConfirmDialogCancelled);
+
+	ShowDialog(Dialog);
+}
+
 void UEditorMainWidget::ShowColorPicker(int32 GroupId)
 {
 	if (!ColorPickerClass || !GameMode) return;
@@ -573,13 +599,10 @@ void UEditorMainWidget::ShowValidationPanel(const FLevelValidationResult& Result
 	ShowDialog(Panel);
 }
 
-void UEditorMainWidget::DoSave()
+void UEditorMainWidget::DoSave(const FString& FileName)
 {
 	if (!GameMode) return;
 
-	// Simplified: use a fixed file name or auto-increment
-	// TODO: Implement proper file naming / file browser
-	FString FileName = TEXT("EditorLevel_Save");
 	bool bSuccess = GameMode->SaveLevel(FileName);
 
 	if (StatusBar)

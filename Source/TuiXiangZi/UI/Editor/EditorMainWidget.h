@@ -15,6 +15,8 @@ class UConfirmDialog;
 class UNewLevelDialog;
 class UValidationResultPanel;
 class UColorPickerPopup;
+class ULoadLevelDialog;
+class USaveLevelDialog;
 class ALevelEditorGameMode;
 struct FLevelValidationResult;
 
@@ -87,6 +89,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UColorPickerPopup> ColorPickerClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<ULoadLevelDialog> LoadLevelDialogClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USaveLevelDialog> SaveLevelDialogClass;
 
 	// ============================================================
 	// Dialog state
@@ -165,9 +173,6 @@ protected:
 	UFUNCTION()
 	void HandleGroupMgrDeleteGroup(int32 GroupId);
 
-	UFUNCTION()
-	void HandleGroupMgrNewGroup();
-
 	// ============================================================
 	// Dialog management
 	// ============================================================
@@ -196,6 +201,14 @@ protected:
 	UFUNCTION()
 	void HandleColorPickerConfirmed(int32 InGroupId, FLinearColor BaseColor, FLinearColor ActiveColor);
 
+	/** SaveLevelDialog confirm relay */
+	UFUNCTION()
+	void HandleSaveLevelConfirmed(const FString& FileName);
+
+	/** LoadLevelDialog confirm relay */
+	UFUNCTION()
+	void HandleLoadLevelConfirmed(const FString& FileName);
+
 	/** ValidationResultPanel force-confirm / close relay */
 	UFUNCTION()
 	void HandleValidationForceConfirmed();
@@ -207,10 +220,12 @@ protected:
 	// Flow methods
 	// ============================================================
 	void ShowNewLevelDialog();
+	void ShowSaveLevelDialog();
+	void ShowLoadLevelDialog();
 	void ShowColorPicker(int32 GroupId);
 	void ShowValidationPanel(const FLevelValidationResult& Result, EValidationContext Context);
 	void ShowConfirmDialog(const FText& Title, const FText& Message,
 	                       const FText& ConfirmText, TFunction<void()> OnConfirm);
-	void DoSave();
+	void DoSave(const FString& FileName);
 	void DoLoad(const FString& FileName);
 };

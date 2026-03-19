@@ -288,7 +288,7 @@ void UEditorSidebarWidget::RefreshVariantPanel(EEditorBrush Brush)
 
 	TArray<const FTileVisualStyle*> Styles = TileStyleCatalog->GetStylesForType(CellType);
 
-	if (Styles.Num() <= 1)
+	if (Styles.Num() == 0)
 	{
 		VariantPanel->SetVisibility(ESlateVisibility::Collapsed);
 		CurrentVisualStyleId = NAME_None;

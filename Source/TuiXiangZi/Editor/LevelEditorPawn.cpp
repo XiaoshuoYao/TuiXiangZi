@@ -14,13 +14,13 @@ ALevelEditorPawn::ALevelEditorPawn()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    // Orthographic top-down camera as root
+    // Perspective camera as root
     EditorCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("EditorCamera"));
     RootComponent = EditorCamera;
 
-    EditorCamera->ProjectionMode = ECameraProjectionMode::Orthographic;
-    EditorCamera->OrthoWidth = 1024.0f;
-    EditorCamera->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
+    EditorCamera->ProjectionMode = ECameraProjectionMode::Perspective;
+    EditorCamera->FieldOfView = 60.0f;
+    EditorCamera->SetRelativeRotation(FRotator(-50.0f, 0.0f, 0.0f));
     SetActorLocation(FVector(0.0f, 0.0f, 1000.0f));
 
     AutoPossessAI = EAutoPossessAI::Disabled;
@@ -30,7 +30,7 @@ void ALevelEditorPawn::BeginPlay()
 {
     Super::BeginPlay();
 
-    SetActorLocation(FVector(400.0f, 300.0f, 1000.0f));
+    SetActorLocation(FVector(400.0f, -500.0f, 800.0f));
 
     // Cache GridManager reference
     GridManagerRef = Cast<AGridManager>(
@@ -111,7 +111,7 @@ void ALevelEditorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     PlayerInputComponent->BindKey(EKeys::Six,   IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush6);
     PlayerInputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush7);
     PlayerInputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrush8);
-    PlayerInputComponent->BindKey(EKeys::E,     IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrushEraser);
+    PlayerInputComponent->BindKey(EKeys::Nine,   IE_Pressed, this, &ALevelEditorPawn::HandleKeyBrushEraser);
 
     PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ALevelEditorPawn::HandleShortcutEsc);
     PlayerInputComponent->BindKey(EKeys::F5,     IE_Pressed, this, &ALevelEditorPawn::HandleShortcutTest);
@@ -143,10 +143,12 @@ void ALevelEditorPawn::Tick(float DeltaTime)
         HandleErasing();
     }
 
-    if (bIsPanning)
+    if (bIsRotating)
     {
-        HandlePanning(DeltaTime);
+        HandleRotation();
     }
+
+    HandleKeyboardMovement(DeltaTime);
 }
 
 bool ALevelEditorPawn::RaycastToGrid(FIntPoint& OutGridPos) const
@@ -222,19 +224,18 @@ void ALevelEditorPawn::OnRightClickCompleted(const FInputActionValue& Value)
 
 void ALevelEditorPawn::OnMiddleClickStarted(const FInputActionValue& Value)
 {
-    bIsPanning = true;
+    bIsRotating = true;
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
         float MouseX, MouseY;
         PC->GetMousePosition(MouseX, MouseY);
-        PanStartMousePos = FVector2D(MouseX, MouseY);
-        PanStartActorLocation = GetActorLocation();
+        LastMousePos = FVector2D(MouseX, MouseY);
     }
 }
 
 void ALevelEditorPawn::OnMiddleClickCompleted(const FInputActionValue& Value)
 {
-    bIsPanning = false;
+    bIsRotating = false;
 }
 
 void ALevelEditorPawn::OnMouseWheel(const FInputActionValue& Value)
@@ -242,8 +243,13 @@ void ALevelEditorPawn::OnMouseWheel(const FInputActionValue& Value)
     if (!EditorCamera) return;
 
     float ScrollValue = Value.Get<float>();
-    float NewWidth = EditorCamera->OrthoWidth - ScrollValue * ZoomSpeed;
-    EditorCamera->OrthoWidth = FMath::Clamp(NewWidth, MinOrthoWidth, MaxOrthoWidth);
+    FVector Forward = EditorCamera->GetForwardVector();
+    FVector NewLocation = GetActorLocation() + Forward * ScrollValue * ZoomSpeed;
+    // Prevent camera from going below ground
+    if (NewLocation.Z >= 50.0f)
+    {
+        SetActorLocation(NewLocation);
+    }
 }
 
 void ALevelEditorPawn::HandlePainting()
@@ -303,34 +309,55 @@ void ALevelEditorPawn::HandleErasing()
     if (MainWidget) MainWidget->RefreshStats();
 }
 
-void ALevelEditorPawn::HandlePanning(float DeltaTime)
+void ALevelEditorPawn::HandleRotation()
 {
     if (MainWidget && MainWidget->IsDialogOpen()) return;
 
     APlayerController* PC = Cast<APlayerController>(GetController());
-    if (!PC || !EditorCamera) return;
+    if (!PC) return;
 
     float MouseX, MouseY;
     PC->GetMousePosition(MouseX, MouseY);
-    FVector2D CurrentMousePos(MouseX, MouseY);
+    FVector2D CurrentMouse(MouseX, MouseY);
 
-    FVector2D MouseDelta = CurrentMousePos - PanStartMousePos;
+    FVector2D Delta = CurrentMouse - LastMousePos;
+    LastMousePos = CurrentMouse;
 
-    int32 ViewportSizeX, ViewportSizeY;
-    PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+    FRotator NewRot = GetActorRotation();
+    NewRot.Yaw += Delta.X * MouseSensitivity;
+    NewRot.Pitch = FMath::Clamp(NewRot.Pitch - Delta.Y * MouseSensitivity, -89.0f, 89.0f);
+    SetActorRotation(NewRot);
+}
 
-    if (ViewportSizeX <= 0 || ViewportSizeY <= 0) return;
+void ALevelEditorPawn::HandleKeyboardMovement(float DeltaTime)
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
 
-    float WorldUnitsPerPixel = EditorCamera->OrthoWidth / static_cast<float>(ViewportSizeX);
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC) return;
 
-    FVector WorldDelta(
-        -MouseDelta.X * WorldUnitsPerPixel,
-        MouseDelta.Y * WorldUnitsPerPixel,
-        0.0f);
+    // Get camera yaw for horizontal movement direction
+    FRotator YawRotation(0.0f, GetActorRotation().Yaw, 0.0f);
+    FVector ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+    FVector RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-    FVector NewLocation = PanStartActorLocation + WorldDelta;
-    NewLocation.Z = GetActorLocation().Z;
-    SetActorLocation(NewLocation);
+    FVector MoveDirection = FVector::ZeroVector;
+
+    if (PC->IsInputKeyDown(EKeys::W)) MoveDirection += ForwardDir;
+    if (PC->IsInputKeyDown(EKeys::S)) MoveDirection -= ForwardDir;
+    if (PC->IsInputKeyDown(EKeys::D)) MoveDirection += RightDir;
+    if (PC->IsInputKeyDown(EKeys::A)) MoveDirection -= RightDir;
+    if (PC->IsInputKeyDown(EKeys::E)) MoveDirection += FVector::UpVector;
+    if (PC->IsInputKeyDown(EKeys::Q)) MoveDirection -= FVector::UpVector;
+
+    if (!MoveDirection.IsNearlyZero())
+    {
+        MoveDirection.Normalize();
+        FVector NewLocation = GetActorLocation() + MoveDirection * MoveSpeed * DeltaTime;
+        // Prevent going below ground
+        if (NewLocation.Z < 50.0f) NewLocation.Z = 50.0f;
+        SetActorLocation(NewLocation);
+    }
 }
 
 // ===== Keyboard Shortcut Handlers =====

@@ -41,6 +41,12 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float MaxOrthoWidth = 4096.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float MoveSpeed = 800.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float MouseSensitivity = 0.3f;
+
     // ===== Enhanced Input =====
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     UInputMappingContext* EditorMappingContext;
@@ -67,9 +73,8 @@ protected:
     // ===== Input State =====
     bool bIsPainting = false;
     bool bIsErasing = false;
-    bool bIsPanning = false;
-    FVector2D PanStartMousePos;
-    FVector PanStartActorLocation;
+    bool bIsRotating = false;
+    FVector2D LastMousePos;
 
     FIntPoint LastPaintedGridPos;
     bool bHasLastPaintedPos = false;
@@ -93,7 +98,8 @@ protected:
 
     void HandlePainting();
     void HandleErasing();
-    void HandlePanning(float DeltaTime);
+    void HandleRotation();
+    void HandleKeyboardMovement(float DeltaTime);
 
     // ===== Keyboard Shortcuts =====
     void HandleKeyBrush1();

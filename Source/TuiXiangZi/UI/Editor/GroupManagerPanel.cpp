@@ -1,6 +1,5 @@
 #include "GroupManagerPanel.h"
 #include "GroupEntryWidget.h"
-#include "Components/Button.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Editor/LevelEditorGameMode.h"
@@ -8,11 +7,6 @@
 void UGroupManagerPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	if (NewGroupButton)
-	{
-		NewGroupButton->OnClicked.AddDynamic(this, &UGroupManagerPanel::HandleNewGroupClicked);
-	}
 
 	UpdateEmptyHint();
 }
@@ -115,11 +109,6 @@ void UGroupManagerPanel::RebuildFromGameMode(ALevelEditorGameMode* GameMode)
 
 void UGroupManagerPanel::SetPlacementMode(bool bIsPlacing, int32 PlacingGroupId)
 {
-	if (NewGroupButton)
-	{
-		NewGroupButton->SetIsEnabled(!bIsPlacing);
-	}
-
 	for (auto& Pair : EntryMap)
 	{
 		if (!Pair.Value)
@@ -148,11 +137,6 @@ void UGroupManagerPanel::SetPlacementMode(bool bIsPlacing, int32 PlacingGroupId)
 			Pair.Value->SetInteractionEnabled(true);
 		}
 	}
-}
-
-void UGroupManagerPanel::HandleNewGroupClicked()
-{
-	OnRequestNewGroup.Broadcast();
 }
 
 void UGroupManagerPanel::HandleEntryRowClicked(int32 GroupId)

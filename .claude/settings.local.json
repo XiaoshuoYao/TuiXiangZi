@@ -35,12 +35,16 @@
       "Bash(grep -E \"\\\\.\\(uasset|umap\\)$\")",
       "Bash(grep -r class.*Widget /f/SideProject/KuluoBishi/Source/TuiXiangZi/)",
       "Bash(find /f/SideProject/KuluoBishi/Content/Blueprints -type f -name *.uasset)",
-      "Read(//c/Users/ysysys/.claude/plans/**)"
+      "Read(//c/Users/ysysys/.claude/plans/**)",
+      "Bash(wc -l /f/SideProject/KuluoBishi/Source/TuiXiangZi/Editor/*.cpp /f/SideProject/KuluoBishi/Source/TuiXiangZi/UI/Editor/*.cpp)",
+      "Bash(find f:SideProjectKuluoBishi -type d -name *Plan* -o -name *Design*)",
+      "Bash(ls *.uproject)"
     ],
     "additionalDirectories": [
       "f:\\SideProject\\KuluoBishi\\Source\\TuiXiangZi",
       "f:\\SideProject\\KuluoBishi\\.claude\\worktrees\\agent-ade599c3\\Source\\TuiXiangZi\\Gameplay",
-      "f:\\SideProject\\KuluoBishi\\.claude\\worktrees\\agent-a7cead12\\Source\\TuiXiangZi\\Editor"
+      "f:\\SideProject\\KuluoBishi\\.claude\\worktrees\\agent-a7cead12\\Source\\TuiXiangZi\\Editor",
+      "f:\\SideProject\\KuluoBishi\\.claude\\skills"
     ]
   }
 }
