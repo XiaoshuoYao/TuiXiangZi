@@ -54,9 +54,6 @@ public:
 
     void OnPlayerEnteredGoal(FIntPoint GoalPos);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game")
-    TSubclassOf<class APushableBox> PushableBoxClass;
-
     // ===== HUD Data Interface =====
     UFUNCTION(BlueprintCallable, Category = "Game|HUD")
     int32 GetCurrentStepCount() const;

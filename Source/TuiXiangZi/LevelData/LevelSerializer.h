@@ -31,4 +31,6 @@ private:
     static bool JsonToCellData(const TSharedPtr<FJsonObject>& JsonObj, FCellData& OutCell);
     static TSharedRef<FJsonObject> GroupStyleToJson(const FMechanismGroupStyleData& Style);
     static bool JsonToGroupStyle(const TSharedPtr<FJsonObject>& JsonObj, FMechanismGroupStyleData& OutStyle);
+    static TSharedRef<FJsonValue> BoxDataToJsonValue(const FBoxData& Box);
+    static bool JsonValueToBoxData(const TSharedPtr<FJsonValue>& Value, FBoxData& OutBox);
 };

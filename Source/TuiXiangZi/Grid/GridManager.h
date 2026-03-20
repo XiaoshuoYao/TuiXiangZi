@@ -7,11 +7,14 @@
 
 struct FLevelData;
 struct FTileVisualStyle;
+struct FMechanismGroupStyleData;
 class UTileStyleCatalog;
-class APressurePlate;
-class ADoor;
+class ATileVisualActor;
+class UGridMechanismComponent;
+class UDoorMechanismComponent;
+struct FBoxData;
 class ASokobanCharacter;
-class APushableBox;
+class UPushableBoxComponent;
 
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnActorLogicalMoved, AActor*, FIntPoint, FIntPoint);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerEnteredGoal, FIntPoint);
@@ -27,21 +30,21 @@ public:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-    // ===== 网格配置 =====
+    // ===== Grid Config =====
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid|Config")
     float CellSize = 100.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid|Config")
     FVector GridOrigin = FVector::ZeroVector;
 
-    // ===== 坐标转换 =====
+    // ===== Coordinate Conversion =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Coordinate")
     FVector GridToWorld(FIntPoint GridPos) const;
 
     UFUNCTION(BlueprintCallable, Category = "Grid|Coordinate")
     FIntPoint WorldToGrid(FVector WorldPos) const;
 
-    // ===== 格子查询 =====
+    // ===== Cell Query =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Query")
     FGridCell GetCell(FIntPoint GridPos) const;
 
@@ -57,21 +60,20 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Grid|Query")
     bool IsCellOccupied(FIntPoint GridPos) const;
 
-    // ===== 格子增删 =====
+    // ===== Cell Edit =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Edit")
     void SetCell(FIntPoint GridPos, const FGridCell& Cell);
 
     UFUNCTION(BlueprintCallable, Category = "Grid|Edit")
     void RemoveCell(FIntPoint GridPos);
 
-    /** Set the OccupyingActor on a cell without re-spawning visual actors. */
     void SetCellOccupant(FIntPoint GridPos, AActor* Occupant);
 
-    // ===== 动态边界 =====
+    // ===== Dynamic Bounds =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Query")
     FIntRect GetGridBounds() const;
 
-    // ===== 关卡管理 =====
+    // ===== Level Management =====
     void InitFromLevelData(const FLevelData& Data);
 
     UFUNCTION(BlueprintCallable, Category = "Grid|Level")
@@ -80,28 +82,41 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Grid|Level")
     void ClearGrid();
 
-    // ===== 事件委托 =====
+    // ===== Event Delegates =====
     FOnActorLogicalMoved OnActorLogicalMoved;
     FOnPlayerEnteredGoal OnPlayerEnteredGoal;
     FOnPitFilled OnPitFilled;
 
-    // ===== 移动逻辑 =====
+    // ===== Movement =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Gameplay")
     bool TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction);
 
-    // ===== 机关系统 =====
+    // ===== Mechanism System =====
     void CheckAllPressurePlateGroups();
-    void SpawnMechanismActors(const FLevelData& Data);
 
-    // ===== 机关 Actor 访问 =====
-    const TArray<APressurePlate*>& GetAllPressurePlates() const { return AllPressurePlates; }
-    const TArray<ADoor*>& GetAllDoors() const { return AllDoors; }
+    const TArray<UGridMechanismComponent*>& GetAllMechanisms() const { return AllMechanisms; }
+    UGridMechanismComponent* GetMechanismAt(FIntPoint GridPos) const;
 
-    // ===== 样式系统 =====
+    void ApplyMechanismGroupStyles(const TArray<FMechanismGroupStyleData>& GroupStyles);
+
+    // ===== Box System =====
+    /** 在指定位置生成一个箱子 Actor（由 SpawnOrUpdateVisualActor 和 Undo 使用） */
+    void SpawnBoxActorAt(FIntPoint GridPos, FName VisualStyleId);
+    void DestroyAllBoxActors();
+    const TArray<UPushableBoxComponent*>& GetAllBoxes() const { return AllBoxes; }
+    UPushableBoxComponent* GetBoxComponentAt(FIntPoint GridPos) const;
+
+    // ===== Style System =====
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid|Style")
     UTileStyleCatalog* TileStyleCatalog;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid|Style")
+    TMap<EGridCellType, TSubclassOf<ATileVisualActor>> DefaultVisualClasses;
+
     const FTileVisualStyle* ResolveTileVisual(const FGridCell& Cell) const;
+
+    /** Find the VisualStyleId of a nearby floor cell (for floor underlay matching). */
+    FName FindNearbyFloorStyleId(FIntPoint GridPos) const;
 
 protected:
     UPROPERTY(VisibleAnywhere, Category = "Grid|Debug")
@@ -111,15 +126,20 @@ protected:
     TArray<FIntPoint> GoalPositions;
 
     UPROPERTY()
-    TMap<FIntPoint, AActor*> VisualActors;
+    TMap<FIntPoint, ATileVisualActor*> VisualActors;
+
+    /** 机关/Goal 格子底下的地板 Actor */
+    UPROPERTY()
+    TMap<FIntPoint, ATileVisualActor*> FloorUnderlays;
 
     void SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& Cell);
     void DestroyVisualActor(FIntPoint GridPos);
     void DestroyAllVisualActors();
-    UStaticMesh* GetDefaultMeshForCellType(EGridCellType CellType) const;
-    UMaterialInterface* GetDefaultMaterialForCellType(EGridCellType CellType) const;
 
-    // ===== 移动辅助 =====
+    ATileVisualActor* SpawnTileVisualFromStyle(const FGridCell& Cell, const FVector& WorldPos,
+        FActorSpawnParameters& SpawnParams);
+
+    // ===== Movement Helpers =====
     bool ExecuteSingleMove(FIntPoint FromGrid, FIntPoint ToGrid, EMoveDirection Direction);
     void HandleBoxFallIntoPit(AActor* BoxActor, FIntPoint PitPos);
     void UpdateOccupancy(FIntPoint OldPos, FIntPoint NewPos, AActor* Actor);
@@ -127,12 +147,13 @@ protected:
     void PostMoveSettlement();
     void CheckGoalCondition();
 
-    // ===== 机关 Actor 追踪 =====
+    // ===== Mechanism Tracking =====
     UPROPERTY()
-    TArray<APressurePlate*> AllPressurePlates;
+    TArray<UGridMechanismComponent*> AllMechanisms;
 
+    // ===== Box Tracking =====
     UPROPERTY()
-    TArray<ADoor*> AllDoors;
+    TArray<UPushableBoxComponent*> AllBoxes;
 
     UPROPERTY(EditAnywhere, Category = "Grid|Debug")
     bool bDrawDebugGrid = true;

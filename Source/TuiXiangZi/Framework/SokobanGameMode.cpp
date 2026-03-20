@@ -3,16 +3,14 @@
 #include "Framework/SokobanGameInstance.h"
 #include "Grid/GridManager.h"
 #include "Gameplay/SokobanCharacter.h"
-#include "Gameplay/PushableBox.h"
-#include "Gameplay/Mechanisms/PressurePlate.h"
-#include "Gameplay/Mechanisms/Door.h"
+#include "Gameplay/PushableBoxComponent.h"
+#include "Gameplay/Mechanisms/GridMechanismComponent.h"
 #include "LevelData/LevelSerializer.h"
 #include "LevelData/LevelDataTypes.h"
 #include "UI/PauseMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/Paths.h"
-#include "EngineUtils.h"
 
 ASokobanGameMode::ASokobanGameMode()
 {
@@ -26,17 +24,6 @@ ASokobanGameMode::ASokobanGameMode()
     else
     {
         DefaultPawnClass = ASokobanCharacter::StaticClass();
-    }
-    // Prefer Blueprint box (with MoveCurve config)
-    static ConstructorHelpers::FClassFinder<APushableBox> BoxBP(
-        TEXT("/Game/Blueprints/BP_PushableBox"));
-    if (BoxBP.Succeeded())
-    {
-        PushableBoxClass = BoxBP.Class;
-    }
-    else
-    {
-        PushableBoxClass = APushableBox::StaticClass();
     }
     GameStateClass = ASokobanGameState::StaticClass();
     PlayerControllerClass = APlayerController::StaticClass();
@@ -156,44 +143,11 @@ void ASokobanGameMode::ExecuteLoadLevel(const FString& JsonPath)
         GS->ResetState();
     }
 
-    // Destroy existing boxes
-    UWorld* World = GetWorld();
-    if (World)
-    {
-        TArray<APushableBox*> OldBoxes;
-        for (TActorIterator<APushableBox> It(World); It; ++It)
-        {
-            OldBoxes.Add(*It);
-        }
-        for (APushableBox* Box : OldBoxes)
-        {
-            if (Box) Box->Destroy();
-        }
-    }
-
+    // InitFromLevelData handles cells, mechanisms, AND boxes
     GridManagerRef->InitFromLevelData(LevelData);
 
-    // Spawn boxes
-    if (World)
-    {
-        for (const FIntPoint& BoxPos : LevelData.BoxPositions)
-        {
-            FVector WorldPos = GridManagerRef->GridToWorld(BoxPos);
-            FActorSpawnParameters SpawnParams;
-            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-            UClass* BoxClass = PushableBoxClass ? PushableBoxClass.Get() : APushableBox::StaticClass();
-            APushableBox* NewBox = World->SpawnActor<APushableBox>(
-                BoxClass, FTransform(WorldPos), SpawnParams);
-            if (NewBox)
-            {
-                NewBox->SnapToGridPos(BoxPos);
-                GridManagerRef->SetCellOccupant(BoxPos, NewBox);
-            }
-        }
-    }
-
     // Position player
+    UWorld* World = GetWorld();
     if (World)
     {
         APlayerController* PC = World->GetFirstPlayerController();
@@ -288,7 +242,19 @@ void ASokobanGameMode::OnPlayerEnteredGoal(FIntPoint GoalPos)
 
         OnLevelCompleted.Broadcast(Steps);
 
-        ShowLevelCompleteMenu(Steps);
+        UE_LOG(LogTemp, Warning, TEXT("SokobanGameMode: bFromEditor = %s"), bFromEditor ? TEXT("true") : TEXT("false"));
+
+        if (bFromEditor)
+        {
+            // Test mode: auto-return to editor after a short delay
+            FTimerHandle TimerHandle;
+            GetWorldTimerManager().SetTimer(TimerHandle, this,
+                &ASokobanGameMode::ReturnToEditor, 1.0f, false);
+        }
+        else
+        {
+            ShowLevelCompleteMenu(Steps);
+        }
     }
 }
 
@@ -299,33 +265,35 @@ void ASokobanGameMode::UpdateBoxOnPlateVisuals()
     UWorld* World = GetWorld();
     if (!World) return;
 
-    const TArray<APressurePlate*>& Plates = GridManagerRef->GetAllPressurePlates();
-
     // Build map of plate positions to group colors
     TMap<FIntPoint, FLinearColor> PlateColorMap;
-    for (const APressurePlate* Plate : Plates)
+    for (const UGridMechanismComponent* Mech : GridManagerRef->GetAllMechanisms())
     {
-        if (Plate)
+        if (Mech && !Mech->BlocksPassage())
         {
-            PlateColorMap.Add(Plate->GridPos, Plate->IsActivated() ?
-                Plate->CachedActiveColor : Plate->CachedBaseColor);
+            PlateColorMap.Add(Mech->GridPos,
+                Mech->IsActivated() ? Mech->CachedActiveColor : Mech->CachedBaseColor);
         }
     }
 
-    // Update each box
-    for (TActorIterator<APushableBox> It(World); It; ++It)
+    // Update each box via component
+    for (UPushableBoxComponent* BoxComp : GridManagerRef->GetAllBoxes())
     {
-        APushableBox* Box = *It;
-        if (!Box || Box->IsHidden()) continue;
+        if (!BoxComp || !BoxComp->GetOwner() || BoxComp->GetOwner()->IsHidden()) continue;
 
-        FLinearColor* Color = PlateColorMap.Find(Box->CurrentGridPos);
-        Box->SetOnPlateVisual(Color != nullptr, Color ? *Color : FLinearColor::Black);
+        FLinearColor* Color = PlateColorMap.Find(BoxComp->CurrentGridPos);
+        BoxComp->SetOnPlateVisual(Color != nullptr, Color ? *Color : FLinearColor::Black);
     }
 }
 
 void ASokobanGameMode::ReturnToEditor()
 {
-    UGameplayStatics::OpenLevel(this, FName(TEXT("EditorMap")));
+    FString Options;
+    if (!EditorLevelJsonPath.IsEmpty())
+    {
+        Options = FString::Printf(TEXT("RestoreJson=%s"), *EditorLevelJsonPath);
+    }
+    UGameplayStatics::OpenLevel(this, FName(TEXT("EditorMap")), true, Options);
 }
 
 void ASokobanGameMode::ReturnToMainMenu()
@@ -361,6 +329,13 @@ void ASokobanGameMode::RequestReturnToMenu() { ReturnToMainMenu(); }
 
 void ASokobanGameMode::TogglePauseMenu()
 {
+    // Test mode: ESC directly returns to editor
+    if (bFromEditor)
+    {
+        ReturnToEditor();
+        return;
+    }
+
     // If level is completed, ESC should not dismiss the menu
     if (bPauseMenuVisible && IsLevelCompleted())
     {

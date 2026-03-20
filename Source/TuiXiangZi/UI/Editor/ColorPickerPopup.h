@@ -79,6 +79,7 @@ protected:
 	float CurrentS = 1.0f;   // 0~1
 	float CurrentV = 1.0f;   // 0~1
 
+	bool bSetupCalled = false;
 	bool bDraggingSV = false;
 	bool bDraggingHue = false;
 

@@ -363,11 +363,11 @@ void UEditorMainWidget::HandleOverlayClicked()
 
 void UEditorMainWidget::HandleConfirmDialogConfirmed()
 {
+	// Save action before CloseDialog() clears PendingConfirmAction
+	TFunction<void()> Action = MoveTemp(PendingConfirmAction);
 	CloseDialog();
-	if (PendingConfirmAction)
+	if (Action)
 	{
-		TFunction<void()> Action = MoveTemp(PendingConfirmAction);
-		PendingConfirmAction = nullptr;
 		Action();
 	}
 }

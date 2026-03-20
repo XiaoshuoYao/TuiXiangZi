@@ -1,23 +1,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gameplay/Mechanisms/GridMechanism.h"
-#include "Door.generated.h"
+#include "Gameplay/Mechanisms/GridMechanismComponent.h"
+#include "DoorMechanismComponent.generated.h"
 
 class UTimelineComponent;
 class UCurveFloat;
 
-UCLASS()
-class TUIXIANGZI_API ADoor : public AGridMechanism
+UCLASS(Blueprintable, ClassGroup = "GridMechanism",
+	meta = (BlueprintSpawnableComponent))
+class TUIXIANGZI_API UDoorMechanismComponent : public UGridMechanismComponent
 {
 	GENERATED_BODY()
 
 public:
-	ADoor();
-
 	virtual void BeginPlay() override;
 	virtual void OnActivate() override;
 	virtual void OnDeactivate() override;
+	virtual bool BlocksPassage() const override { return true; }
+	virtual bool IsCurrentlyBlocking() const override { return !bIsOpen; }
 
 	void SetDoorOpen(bool bOpen);
 	void SetDoorStateImmediate(bool bOpen);
@@ -26,8 +27,8 @@ public:
 	bool bIsOpen = false;
 
 protected:
-	UPROPERTY(VisibleAnywhere, Category = "Door")
-	UTimelineComponent* DoorTimeline;
+	UPROPERTY()
+	UTimelineComponent* DoorTimeline = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Door")
 	UCurveFloat* DoorCurve;

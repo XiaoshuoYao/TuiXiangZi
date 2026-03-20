@@ -10,6 +10,7 @@ namespace GridTypeUtils
         { EGridCellType::Ice,           TEXT("Ice") },
         { EGridCellType::Goal,          TEXT("Goal") },
         { EGridCellType::Door,          TEXT("Door") },
+        { EGridCellType::Box,           TEXT("Box") },
     };
 
     FString CellTypeToString(EGridCellType Type)

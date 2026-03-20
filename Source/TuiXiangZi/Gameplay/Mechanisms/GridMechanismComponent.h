@@ -1,26 +1,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-#include "GridMechanism.generated.h"
+#include "Components/ActorComponent.h"
+#include "GridMechanismComponent.generated.h"
 
-UCLASS(Abstract)
-class TUIXIANGZI_API AGridMechanism : public AActor
+class UStaticMeshComponent;
+
+UCLASS(Abstract, Blueprintable, ClassGroup = "GridMechanism",
+	meta = (BlueprintSpawnableComponent))
+class TUIXIANGZI_API UGridMechanismComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	AGridMechanism();
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanism")
 	FIntPoint GridPos;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanism")
 	int32 GroupId = -1;
 
+	// ---- Activation interface ----
 	virtual void OnActivate();
 	virtual void OnDeactivate();
-	virtual bool IsActivated() const;
+	bool IsActivated() const { return bIsActivated; }
+
+	// ---- Passability ----
+	virtual bool BlocksPassage() const { return false; }
+	virtual bool IsCurrentlyBlocking() const { return false; }
+
+	// ---- Color system ----
 	virtual void SetGroupColor(FLinearColor BaseColor, FLinearColor ActiveColor);
 
 	FLinearColor CachedBaseColor = FLinearColor::White;
@@ -28,12 +36,9 @@ public:
 
 protected:
 	bool bIsActivated = false;
-
-	UPROPERTY(VisibleAnywhere, Category = "Mechanism")
-	UStaticMeshComponent* MeshComp;
-
 	UMaterialInstanceDynamic* DynMaterial = nullptr;
 
 	void CreateDynamicMaterial();
 	void ApplyColor(FLinearColor Color);
+	UStaticMeshComponent* FindOwnerMeshComp() const;
 };

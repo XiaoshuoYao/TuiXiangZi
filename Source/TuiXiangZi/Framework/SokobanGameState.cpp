@@ -1,12 +1,10 @@
 #include "Framework/SokobanGameState.h"
-#include "Framework/SokobanGameMode.h"
 #include "Grid/GridManager.h"
 #include "Grid/GridTypes.h"
 #include "Gameplay/SokobanCharacter.h"
-#include "Gameplay/PushableBox.h"
-#include "Gameplay/Mechanisms/Door.h"
-#include "Gameplay/Mechanisms/PressurePlate.h"
-#include "EngineUtils.h"
+#include "Gameplay/PushableBoxComponent.h"
+#include "Gameplay/Mechanisms/GridMechanismComponent.h"
+#include "Gameplay/Mechanisms/DoorMechanismComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 FLevelSnapshot ASokobanGameState::CaptureSnapshot(const AGridManager* GM) const
@@ -34,28 +32,28 @@ FLevelSnapshot ASokobanGameState::CaptureSnapshot(const AGridManager* GM) const
         }
     }
 
-    // Collect box positions by iterating all APushableBox actors
-    if (World)
+    // Collect box states via component queries
+    for (const UPushableBoxComponent* BoxComp : GM->GetAllBoxes())
     {
-        for (TActorIterator<APushableBox> It(World); It; ++It)
+        if (BoxComp && BoxComp->GetOwner()
+            && !BoxComp->GetOwner()->IsActorBeingDestroyed()
+            && !BoxComp->GetOwner()->IsHidden())
         {
-            APushableBox* Box = *It;
-            if (Box && !Box->IsActorBeingDestroyed() && !Box->IsHidden())
-            {
-                Snapshot.BoxPositions.Add(Box->CurrentGridPos);
-            }
+            FBoxData BD;
+            BD.GridPos = BoxComp->CurrentGridPos;
+            BD.VisualStyleId = BoxComp->VisualStyleId;
+            Snapshot.BoxStates.Add(BD);
         }
     }
 
     // Capture door states
-    const TArray<ADoor*>& Doors = GM->GetAllDoors();
-    for (const ADoor* Door : Doors)
+    for (const UGridMechanismComponent* Mech : GM->GetAllMechanisms())
     {
-        if (Door)
+        if (const UDoorMechanismComponent* DoorComp = Cast<UDoorMechanismComponent>(Mech))
         {
             FDoorSnapshot DS;
-            DS.DoorPos = Door->GridPos;
-            DS.bDoorOpen = Door->bIsOpen;
+            DS.DoorPos = DoorComp->GridPos;
+            DS.bDoorOpen = DoorComp->bIsOpen;
             Snapshot.DoorStates.Add(DS);
         }
     }
@@ -137,40 +135,11 @@ void ASokobanGameState::RestoreSnapshot(const FLevelSnapshot& Snapshot, AGridMan
 
     // Step 2: Restore pit states (skip for now - pits are not tracked in snapshots)
 
-    // Step 3: Destroy all current box actors
-    TArray<APushableBox*> BoxesToDestroy;
-    for (TActorIterator<APushableBox> It(World); It; ++It)
+    // Step 3+4: Destroy all boxes and respawn from snapshot
+    GM->DestroyAllBoxActors();
+    for (const FBoxData& BS : Snapshot.BoxStates)
     {
-        BoxesToDestroy.Add(*It);
-    }
-    for (APushableBox* Box : BoxesToDestroy)
-    {
-        if (Box)
-        {
-            Box->Destroy();
-        }
-    }
-
-    // Step 4: Spawn new boxes at snapshot positions
-    for (const FIntPoint& BoxPos : Snapshot.BoxPositions)
-    {
-        FVector WorldPos = GM->GridToWorld(BoxPos);
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-        UClass* BoxClass = APushableBox::StaticClass();
-        if (ASokobanGameMode* GM_Mode = Cast<ASokobanGameMode>(World->GetAuthGameMode()))
-        {
-            if (GM_Mode->PushableBoxClass)
-                BoxClass = GM_Mode->PushableBoxClass.Get();
-        }
-        APushableBox* NewBox = World->SpawnActor<APushableBox>(
-            BoxClass, FTransform(WorldPos), SpawnParams);
-        if (NewBox)
-        {
-            NewBox->SnapToGridPos(BoxPos);
-            GM->SetCellOccupant(BoxPos, NewBox);
-        }
+        GM->SpawnBoxActorAt(BS.GridPos, BS.VisualStyleId);
     }
 
     // Step 5: Restore player position
@@ -186,23 +155,18 @@ void ASokobanGameState::RestoreSnapshot(const FLevelSnapshot& Snapshot, AGridMan
     }
 
     // Step 6: Restore door states
-    const TArray<ADoor*>& Doors = GM->GetAllDoors();
     for (const FDoorSnapshot& DS : Snapshot.DoorStates)
     {
-        for (ADoor* Door : Doors)
+        UGridMechanismComponent* Mech = GM->GetMechanismAt(DS.DoorPos);
+        if (UDoorMechanismComponent* DoorComp = Cast<UDoorMechanismComponent>(Mech))
         {
-            if (Door && Door->GridPos == DS.DoorPos)
-            {
-                Door->SetDoorStateImmediate(DS.bDoorOpen);
+            DoorComp->SetDoorStateImmediate(DS.bDoorOpen);
 
-                // Update grid cell door state via SetCell (doors need visual update)
-                if (GM->HasCell(DS.DoorPos))
-                {
-                    FGridCell DoorCell = GM->GetCell(DS.DoorPos);
-                    DoorCell.bDoorOpen = DS.bDoorOpen;
-                    GM->SetCell(DS.DoorPos, DoorCell);
-                }
-                break;
+            if (GM->HasCell(DS.DoorPos))
+            {
+                FGridCell DoorCell = GM->GetCell(DS.DoorPos);
+                DoorCell.bDoorOpen = DS.bDoorOpen;
+                GM->SetCell(DS.DoorPos, DoorCell);
             }
         }
     }

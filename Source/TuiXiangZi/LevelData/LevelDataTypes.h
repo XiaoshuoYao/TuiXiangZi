@@ -27,12 +27,20 @@ struct FCellData
 };
 
 USTRUCT(BlueprintType)
+struct FBoxData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FIntPoint GridPos = FIntPoint::ZeroValue;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FName VisualStyleId = NAME_None;
+};
+
+USTRUCT(BlueprintType)
 struct FLevelData
 {
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FCellData> Cells;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FIntPoint PlayerStart = FIntPoint::ZeroValue;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FIntPoint> BoxPositions;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FMechanismGroupStyleData> GroupStyles;
 };

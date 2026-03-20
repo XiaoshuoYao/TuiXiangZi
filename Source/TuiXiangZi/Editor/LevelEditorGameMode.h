@@ -40,6 +40,7 @@ public:
     ALevelEditorGameMode();
 
     virtual void BeginPlay() override;
+    virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
     // ===== Brush =====
     UFUNCTION(BlueprintCallable, Category = "Editor")
@@ -119,7 +120,7 @@ public:
     int32 GetCellCount() const;
 
     UFUNCTION(BlueprintCallable, Category = "Editor")
-    int32 GetBoxCount() const { return BoxSpawnPositions.Num(); }
+    int32 GetBoxCount() const;
 
     UFUNCTION(BlueprintCallable, Category = "Editor")
     int32 GetGroupCount() const { return GroupStyles.Num(); }
@@ -155,8 +156,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Editor")
     FIntPoint PlayerStartPos;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Editor")
-    TArray<FIntPoint> BoxSpawnPositions;
 
 protected:
     bool bIsDirty = false;
@@ -190,14 +189,14 @@ protected:
     UPROPERTY()
     AActor* PlayerStartMarker;
 
-    UPROPERTY()
-    TMap<FIntPoint, AActor*> BoxSpawnMarkers;
+
+    FString PendingRestoreJsonPath;
+
+    void RestoreFromLevelData(const FLevelData& Data);
 
     // ===== Helpers =====
     struct FLevelData BuildLevelData() const;
     void SpawnPlayerStartMarker(FIntPoint Pos);
-    void SpawnBoxSpawnMarker(FIntPoint Pos);
-    void RemoveBoxSpawnMarker(FIntPoint Pos);
     void UpdateGridVisualizerBounds();
 
     EGridCellType BrushToCellType(EEditorBrush Brush) const;

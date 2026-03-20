@@ -13,6 +13,7 @@ enum class EGridCellType : uint8
     Ice             UMETA(DisplayName = "Ice"),
     Goal            UMETA(DisplayName = "Goal"),
     Door            UMETA(DisplayName = "Door"),
+    Box             UMETA(DisplayName = "Box"),
 };
 
 UENUM(BlueprintType)

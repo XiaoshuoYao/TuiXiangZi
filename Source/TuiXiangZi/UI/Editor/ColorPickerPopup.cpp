@@ -36,12 +36,22 @@ void UColorPickerPopup::NativeConstruct()
 			SVPlane->SetBrush(Brush);
 		}
 	}
+
+	// If Setup() was called before NativeConstruct (typical flow),
+	// re-apply HSV state now that the MID and widgets are ready.
+	if (bSetupCalled)
+	{
+		RegenerateSVTexture();
+		UpdateFromHSV();
+		UpdateCursorPositions();
+	}
 }
 
 void UColorPickerPopup::Setup(int32 InGroupId, FLinearColor CurrentBaseColor)
 {
 	GroupId = InGroupId;
 	OriginalColor = CurrentBaseColor;
+	bSetupCalled = true;
 
 	if (OldColorPreview)
 	{

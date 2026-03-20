@@ -6,6 +6,7 @@
 #include "TileStyleCatalog.generated.h"
 
 class UTextureRenderTarget2D;
+class ATileVisualActor;
 
 USTRUCT(BlueprintType)
 struct FTileVisualStyle
@@ -21,13 +22,11 @@ struct FTileVisualStyle
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TileStyle")
     EGridCellType ApplicableType = EGridCellType::Floor;
 
+    /** 该变体对应的蓝图 Actor 类（Tile/Box 均为 ATileVisualActor 子类，行为靠 Component 区分） */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TileStyle")
-    UStaticMesh* Mesh = nullptr;
+    TSubclassOf<AActor> ActorClass;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TileStyle")
-    UMaterialInterface* Material = nullptr;
-
-    /** 自动从 Mesh+Material 渲染生成，无需手动设置 */
+    /** 自动从蓝图的 MeshComp 渲染生成，无需手动设置 */
     UPROPERTY(Transient, VisibleAnywhere, Category = "TileStyle")
     UTextureRenderTarget2D* Thumbnail = nullptr;
 };
@@ -59,9 +58,12 @@ public:
     /** 为所有 Style 条目重新渲染缩略图 */
     void RegenerateAllThumbnails();
 
+    /** 确保缩略图已生成（PIE 运行时按需调用） */
+    void EnsureThumbnailsGenerated();
+
 private:
-    /** 将 Mesh+Material 渲染到已有的 RenderTarget 中 */
-    static void RenderMeshToTarget(UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
-        UStaticMesh* Mesh, UMaterialInterface* Material);
+    /** 在预览世界中生成蓝图实例并渲染缩略图 */
+    static void RenderActorClassToTarget(UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
+        TSubclassOf<AActor> ActorClass);
 #endif
 };

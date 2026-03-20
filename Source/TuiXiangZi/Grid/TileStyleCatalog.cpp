@@ -1,4 +1,5 @@
 #include "Grid/TileStyleCatalog.h"
+#include "Grid/TileVisualActor.h"
 #include "Engine/TextureRenderTarget2D.h"
 
 #if WITH_EDITOR
@@ -7,6 +8,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "RenderingThread.h"
 #endif
 
 const FTileVisualStyle* UTileStyleCatalog::FindStyle(FName StyleId) const
@@ -59,8 +61,26 @@ void UTileStyleCatalog::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
         }
     }
 
-    // Mesh 或 Material 变化时自动重新渲染缩略图
+    // VisualActorClass 变化时自动重新渲染缩略图
     RegenerateAllThumbnails();
+}
+
+void UTileStyleCatalog::EnsureThumbnailsGenerated()
+{
+    // 检查是否有缩略图缺失（Transient 属性在 PIE 启动后为 nullptr）
+    bool bAnyMissing = false;
+    for (const FTileVisualStyle& Style : Styles)
+    {
+        if (Style.ActorClass && !Style.Thumbnail)
+        {
+            bAnyMissing = true;
+            break;
+        }
+    }
+    if (bAnyMissing)
+    {
+        RegenerateAllThumbnails();
+    }
 }
 
 void UTileStyleCatalog::RegenerateAllThumbnails()
@@ -69,7 +89,7 @@ void UTileStyleCatalog::RegenerateAllThumbnails()
     bool bAnyNeedRender = false;
     for (const FTileVisualStyle& Style : Styles)
     {
-        if (Style.Mesh) { bAnyNeedRender = true; break; }
+        if (Style.ActorClass) { bAnyNeedRender = true; break; }
     }
 
     if (!bAnyNeedRender)
@@ -87,7 +107,10 @@ void UTileStyleCatalog::RegenerateAllThumbnails()
     FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::EditorPreview);
     WorldContext.SetCurrentWorld(PreviewWorld);
 
-    // 3. 添加灯光（Key Light + Fill Light）——解决全黑问题
+    // 确保场景完全初始化
+    PreviewWorld->InitializeActorsForPlay(FURL());
+
+    // 3. 添加灯光（Key Light + Fill Light + Sky Light）
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -109,7 +132,8 @@ void UTileStyleCatalog::RegenerateAllThumbnails()
     // 4. 逐条目渲染
     for (FTileVisualStyle& Style : Styles)
     {
-        if (!Style.Mesh)
+        TSubclassOf<AActor> ClassToRender = Style.ActorClass;
+        if (!ClassToRender)
         {
             Style.Thumbnail = nullptr;
             continue;
@@ -125,7 +149,7 @@ void UTileStyleCatalog::RegenerateAllThumbnails()
             Style.Thumbnail->UpdateResourceImmediate(true);
         }
 
-        RenderMeshToTarget(PreviewWorld, Style.Thumbnail, Style.Mesh, Style.Material);
+        RenderActorClassToTarget(PreviewWorld, Style.Thumbnail, ClassToRender);
     }
 
     // 5. 清理：一次性销毁共享世界
@@ -134,27 +158,28 @@ void UTileStyleCatalog::RegenerateAllThumbnails()
     PreviewWorld->DestroyWorld(false);
 }
 
-void UTileStyleCatalog::RenderMeshToTarget(
+void UTileStyleCatalog::RenderActorClassToTarget(
     UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
-    UStaticMesh* Mesh, UMaterialInterface* Material)
+    TSubclassOf<AActor> ActorClass)
 {
-    if (!PreviewWorld || !RT || !Mesh) return;
+    if (!PreviewWorld || !RT || !ActorClass) return;
 
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+    // 在预览世界中临时生成蓝图实例（支持 ATileVisualActor 及其子类）
     AActor* PreviewActor = PreviewWorld->SpawnActor<AActor>(
-        AActor::StaticClass(), FTransform::Identity, SpawnParams);
+        ActorClass, FTransform::Identity, SpawnParams);
     if (!PreviewActor) return;
 
-    // Mesh 组件
-    UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(PreviewActor);
-    MeshComp->RegisterComponent();
-    PreviewActor->SetRootComponent(MeshComp);
-    MeshComp->SetStaticMesh(Mesh);
-    if (Material)
+    // 从蓝图实例中找到第一个 StaticMeshComponent 来确定包围盒和渲染内容
+    UStaticMeshComponent* MeshComp = PreviewActor->FindComponentByClass<UStaticMeshComponent>();
+    UStaticMesh* Mesh = MeshComp ? MeshComp->GetStaticMesh() : nullptr;
+
+    if (!Mesh)
     {
-        MeshComp->SetMaterial(0, Material);
+        PreviewActor->Destroy();
+        return;
     }
 
     // 根据包围盒计算相机位置
@@ -174,8 +199,14 @@ void UTileStyleCatalog::RenderMeshToTarget(
     Capture->bCaptureEveryFrame = false;
     Capture->bCaptureOnMovement = false;
 
+    // 确保场景中所有 PrimitiveSceneInfo 已注册，否则捕获到空场景
+    PreviewWorld->SendAllEndOfFrameUpdates();
+
     // 执行一次捕获
     Capture->CaptureScene();
+
+    // 等待 GPU 渲染完成，确保 RT 内容已写入
+    FlushRenderingCommands();
 
     // 销毁临时 Actor（灯光留在世界里，被所有条目共享）
     PreviewActor->Destroy();

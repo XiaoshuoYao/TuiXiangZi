@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "LevelData/LevelDataTypes.h"
 #include "SokobanGameState.generated.h"
 
 class AGridManager;
@@ -30,7 +31,7 @@ struct FLevelSnapshot
     GENERATED_BODY()
 
     UPROPERTY(BlueprintReadOnly) FIntPoint PlayerPos;
-    UPROPERTY(BlueprintReadOnly) TArray<FIntPoint> BoxPositions;
+    UPROPERTY(BlueprintReadOnly) TArray<FBoxData> BoxStates;
     UPROPERTY(BlueprintReadOnly) TArray<FDoorSnapshot> DoorStates;
     UPROPERTY(BlueprintReadOnly) TArray<FPitSnapshot> PitStates;
     UPROPERTY(BlueprintReadOnly) int32 StepCount = 0;

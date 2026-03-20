@@ -251,6 +251,15 @@ void UEditorSidebarWidget::SetEnabled(bool bEnabled)
 void UEditorSidebarWidget::InitializeWithCatalog(UTileStyleCatalog* Catalog)
 {
 	TileStyleCatalog = Catalog;
+
+#if WITH_EDITOR
+	// Transient 缩略图在 PIE 启动时为空，需按需生成
+	if (TileStyleCatalog)
+	{
+		TileStyleCatalog->EnsureThumbnailsGenerated();
+	}
+#endif
+
 	RefreshVariantPanel(CurrentBrush);
 }
 

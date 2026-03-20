@@ -18,6 +18,12 @@ ALevelEditorGameMode::ALevelEditorGameMode()
     PlayerStartMarker = nullptr;
 }
 
+void ALevelEditorGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+    Super::InitGame(MapName, Options, ErrorMessage);
+    PendingRestoreJsonPath = UGameplayStatics::ParseOption(Options, TEXT("RestoreJson"));
+}
+
 void ALevelEditorGameMode::BeginPlay()
 {
     Super::BeginPlay();
@@ -42,8 +48,24 @@ void ALevelEditorGameMode::BeginPlay()
             AEditorGridVisualizer::StaticClass(), FTransform::Identity, SpawnParams);
     }
 
-    // Initialize with default level
-    NewLevel(8, 6);
+    // Restore editor state if returning from test, otherwise create new level
+    if (!PendingRestoreJsonPath.IsEmpty())
+    {
+        FLevelData Data;
+        if (ULevelSerializer::LoadFromJson(PendingRestoreJsonPath, Data))
+        {
+            RestoreFromLevelData(Data);
+            bIsDirty = true;
+        }
+        else
+        {
+            NewLevel(8, 6);
+        }
+    }
+    else
+    {
+        NewLevel(8, 6);
+    }
 }
 
 void ALevelEditorGameMode::SetCurrentBrush(EEditorBrush NewBrush)
@@ -51,6 +73,8 @@ void ALevelEditorGameMode::SetCurrentBrush(EEditorBrush NewBrush)
     if (CurrentBrush != NewBrush)
     {
         CurrentBrush = NewBrush;
+        // Clear style selection when switching brush type to avoid cross-type mismatch
+        CurrentVisualStyleId = NAME_None;
         OnBrushChanged.Broadcast(NewBrush);
     }
 }
@@ -93,6 +117,7 @@ EGridCellType ALevelEditorGameMode::BrushToCellType(EEditorBrush Brush) const
     case EEditorBrush::Goal:           return EGridCellType::Goal;
     case EEditorBrush::Door:           return EGridCellType::Door;
     case EEditorBrush::PressurePlate:  return EGridCellType::PressurePlate;
+    case EEditorBrush::BoxSpawn:       return EGridCellType::Box;
     default:                           return EGridCellType::Floor;
     }
 }
@@ -149,17 +174,10 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     }
     case EEditorBrush::BoxSpawn:
     {
-        if (!BoxSpawnPositions.Contains(Pos))
-        {
-            BoxSpawnPositions.Add(Pos);
-            SpawnBoxSpawnMarker(Pos);
-        }
-        if (!GridManagerRef->HasCell(Pos))
-        {
-            FGridCell Cell;
-            Cell.CellType = EGridCellType::Floor;
-            GridManagerRef->SetCell(Pos, Cell);
-        }
+        FGridCell Cell;
+        Cell.CellType = EGridCellType::Box;
+        Cell.VisualStyleId = CurrentVisualStyleId;
+        GridManagerRef->SetCell(Pos, Cell);
         break;
     }
     case EEditorBrush::PlayerStart:
@@ -241,9 +259,6 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
             int32 DoorGroupId = Cell.GroupId;
             // Delete entire group (door + all plates)
             DeleteGroup(DoorGroupId);
-            // Also remove box/player markers at this position
-            BoxSpawnPositions.Remove(Pos);
-            RemoveBoxSpawnMarker(Pos);
             if (PlayerStartPos == Pos)
             {
                 PlayerStartPos = FIntPoint(0, 0);
@@ -259,12 +274,40 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
         }
     }
 
-    // Remove the grid cell
-    GridManagerRef->RemoveCell(Pos);
+    // Check if the cell had a floor underlay (Wall, PressurePlate, etc.)
+    // If so, replace with floor instead of removing entirely
+    if (GridManagerRef->HasCell(Pos))
+    {
+        FGridCell Cell = GridManagerRef->GetCell(Pos);
+        if (Cell.CellType == EGridCellType::Wall
+            || Cell.CellType == EGridCellType::PressurePlate
+            || Cell.CellType == EGridCellType::Goal
+            || Cell.CellType == EGridCellType::Box)
+        {
+            FGridCell FloorCell;
+            FloorCell.CellType = EGridCellType::Floor;
+            FloorCell.VisualStyleId = GridManagerRef->FindNearbyFloorStyleId(Pos);
+            GridManagerRef->SetCell(Pos, FloorCell);
 
-    // Remove from box spawns if present
-    BoxSpawnPositions.Remove(Pos);
-    RemoveBoxSpawnMarker(Pos);
+            // Clear player start if it matches
+            if (PlayerStartPos == Pos)
+            {
+                PlayerStartPos = FIntPoint(0, 0);
+                if (PlayerStartMarker)
+                {
+                    PlayerStartMarker->Destroy();
+                    PlayerStartMarker = nullptr;
+                }
+            }
+
+            bIsDirty = true;
+            UpdateGridVisualizerBounds();
+            return;
+        }
+    }
+
+    // Remove the grid cell (for Floor, Ice, etc.)
+    GridManagerRef->RemoveCell(Pos);
 
     // Clear player start if it matches
     if (PlayerStartPos == Pos)
@@ -284,8 +327,6 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
 bool ALevelEditorGameMode::ShouldConfirmErase(FIntPoint GridPos) const
 {
     if (PlayerStartPos == GridPos) return true;
-    if (BoxSpawnPositions.Contains(GridPos)) return true;
-
     if (GridManagerRef && GridManagerRef->HasCell(GridPos))
     {
         FGridCell Cell = GridManagerRef->GetCell(GridPos);
@@ -299,9 +340,6 @@ FString ALevelEditorGameMode::GetEraseWarning(FIntPoint GridPos) const
 {
     if (PlayerStartPos == GridPos)
         return TEXT("This cell contains the Player Start position!");
-
-    if (BoxSpawnPositions.Contains(GridPos))
-        return TEXT("This cell contains a Box Spawn position!");
 
     if (GridManagerRef && GridManagerRef->HasCell(GridPos))
     {
@@ -380,7 +418,7 @@ FLevelValidationResult ALevelEditorGameMode::ValidateLevel() const
     }
 
     // Warning: No boxes
-    if (BoxSpawnPositions.Num() == 0)
+    if (GetBoxCount() == 0)
     {
         Result.Warnings.Add(TEXT("No box spawn positions defined."));
     }
@@ -401,13 +439,6 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
         PlayerStartMarker->Destroy();
         PlayerStartMarker = nullptr;
     }
-    for (auto& Pair : BoxSpawnMarkers)
-    {
-        if (Pair.Value) Pair.Value->Destroy();
-    }
-    BoxSpawnMarkers.Empty();
-    BoxSpawnPositions.Empty();
-
     // Reset editor state
     PlayerStartPos = FIntPoint(0, 0);
     CurrentGroupId = 0;
@@ -476,18 +507,19 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
         return false;
     }
 
+    RestoreFromLevelData(Data);
+    bIsDirty = false;
+    return true;
+}
+
+void ALevelEditorGameMode::RestoreFromLevelData(const FLevelData& Data)
+{
     // Clear current state
     if (PlayerStartMarker)
     {
         PlayerStartMarker->Destroy();
         PlayerStartMarker = nullptr;
     }
-    for (auto& Pair : BoxSpawnMarkers)
-    {
-        if (Pair.Value) Pair.Value->Destroy();
-    }
-    BoxSpawnMarkers.Empty();
-    BoxSpawnPositions.Empty();
     GroupStyles.Empty();
 
     // Load grid data
@@ -498,7 +530,6 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
 
     // Restore editor state
     PlayerStartPos = Data.PlayerStart;
-    BoxSpawnPositions = Data.BoxPositions;
     GroupStyles = Data.GroupStyles;
 
     // Find max group ID from loaded data
@@ -517,16 +548,10 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
     CurrentGroupId = 0;
     CurrentMode = EEditorMode::Normal;
 
-    // Recreate markers
+    // Recreate player marker (box visuals are handled by grid cells)
     SpawnPlayerStartMarker(PlayerStartPos);
-    for (const FIntPoint& BoxPos : BoxSpawnPositions)
-    {
-        SpawnBoxSpawnMarker(BoxPos);
-    }
 
     UpdateGridVisualizerBounds();
-    bIsDirty = false;
-    return true;
 }
 
 void ALevelEditorGameMode::TestCurrentLevel()
@@ -536,7 +561,7 @@ void ALevelEditorGameMode::TestCurrentLevel()
     ULevelSerializer::SaveToJson(Data, TempFilePath);
 
     UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("GameMap")),
-        true, TEXT("FromEditor=true&LevelJson=") + TempFilePath);
+        true, TEXT("FromEditor=true?LevelJson=") + TempFilePath);
 }
 
 int32 ALevelEditorGameMode::CreateNewGroup()
@@ -729,11 +754,23 @@ int32 ALevelEditorGameMode::GetCellCount() const
     return Count;
 }
 
+int32 ALevelEditorGameMode::GetBoxCount() const
+{
+    if (!GridManagerRef) return 0;
+    int32 Count = 0;
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+        for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+            if (GridManagerRef->HasCell(FIntPoint(X, Y))
+                && GridManagerRef->GetCell(FIntPoint(X, Y)).CellType == EGridCellType::Box)
+                Count++;
+    return Count;
+}
+
 FLevelData ALevelEditorGameMode::BuildLevelData() const
 {
     FLevelData Data;
     Data.PlayerStart = PlayerStartPos;
-    Data.BoxPositions = BoxSpawnPositions;
     Data.GroupStyles = GroupStyles;
 
     if (!GridManagerRef) return Data;
@@ -808,59 +845,6 @@ void ALevelEditorGameMode::SpawnPlayerStartMarker(FIntPoint Pos)
 
     Marker->SetActorLocation(WorldPos);
     PlayerStartMarker = Marker;
-}
-
-void ALevelEditorGameMode::SpawnBoxSpawnMarker(FIntPoint Pos)
-{
-    if (!GridManagerRef) return;
-
-    RemoveBoxSpawnMarker(Pos);
-
-    UWorld* World = GetWorld();
-    if (!World) return;
-
-    FVector WorldPos = GridManagerRef->GridToWorld(Pos);
-    WorldPos.Z = 5.0f;
-
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-    AActor* Marker = World->SpawnActor<AActor>(AActor::StaticClass(), FTransform(WorldPos), SpawnParams);
-    if (!Marker) return;
-
-    UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(Marker);
-    MeshComp->RegisterComponent();
-    Marker->SetRootComponent(MeshComp);
-
-    UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr,
-        TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if (CubeMesh)
-    {
-        MeshComp->SetStaticMesh(CubeMesh);
-    }
-
-    float CellSize = GridManagerRef->CellSize;
-    MeshComp->SetWorldScale3D(FVector(CellSize * 0.005f, CellSize * 0.005f, CellSize * 0.005f));
-
-    UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(
-        MeshComp->GetMaterial(0), MeshComp);
-    if (DynMat)
-    {
-        DynMat->SetVectorParameterValue(FName("BaseColor"), FLinearColor(1.0f, 0.5f, 0.0f, 1.0f));
-        MeshComp->SetMaterial(0, DynMat);
-    }
-
-    Marker->SetActorLocation(WorldPos);
-    BoxSpawnMarkers.Add(Pos, Marker);
-}
-
-void ALevelEditorGameMode::RemoveBoxSpawnMarker(FIntPoint Pos)
-{
-    if (AActor** Found = BoxSpawnMarkers.Find(Pos))
-    {
-        if (*Found) (*Found)->Destroy();
-        BoxSpawnMarkers.Remove(Pos);
-    }
 }
 
 void ALevelEditorGameMode::UpdateGridVisualizerBounds()

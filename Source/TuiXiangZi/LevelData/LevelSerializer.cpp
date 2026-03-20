@@ -182,6 +182,52 @@ bool ULevelSerializer::JsonToGroupStyle(const TSharedPtr<FJsonObject>& JsonObj, 
 }
 
 // -----------------------------------------------------------------------------
+// FBoxData <-> JSON
+// -----------------------------------------------------------------------------
+
+TSharedRef<FJsonValue> ULevelSerializer::BoxDataToJsonValue(const FBoxData& Box)
+{
+    // If no style, save as simple [x,y] for backward compat
+    if (Box.VisualStyleId.IsNone())
+    {
+        return IntPointToJsonValue(Box.GridPos);
+    }
+
+    TSharedRef<FJsonObject> Obj = MakeShared<FJsonObject>();
+    Obj->SetField(TEXT("pos"), IntPointToJsonValue(Box.GridPos));
+    Obj->SetStringField(TEXT("visualStyleId"), Box.VisualStyleId.ToString());
+    return MakeShared<FJsonValueObject>(Obj);
+}
+
+bool ULevelSerializer::JsonValueToBoxData(const TSharedPtr<FJsonValue>& Value, FBoxData& OutBox)
+{
+    if (!Value.IsValid()) return false;
+
+    // New format: object with "pos" and "visualStyleId"
+    const TSharedPtr<FJsonObject>* ObjPtr;
+    if (Value->TryGetObject(ObjPtr))
+    {
+        if (!JsonValueToIntPoint((*ObjPtr)->TryGetField(TEXT("pos")), OutBox.GridPos))
+            return false;
+        FString StyleStr;
+        if ((*ObjPtr)->TryGetStringField(TEXT("visualStyleId"), StyleStr))
+            OutBox.VisualStyleId = FName(*StyleStr);
+        else
+            OutBox.VisualStyleId = NAME_None;
+        return true;
+    }
+
+    // Old format: simple [x,y] array
+    if (JsonValueToIntPoint(Value, OutBox.GridPos))
+    {
+        OutBox.VisualStyleId = NAME_None;
+        return true;
+    }
+
+    return false;
+}
+
+// -----------------------------------------------------------------------------
 // SaveToJson
 // -----------------------------------------------------------------------------
 
@@ -200,13 +246,7 @@ bool ULevelSerializer::SaveToJson(const FLevelData& Data, const FString& FilePat
     // PlayerStart
     RootObj->SetField(TEXT("playerStart"), IntPointToJsonValue(Data.PlayerStart));
 
-    // Boxes
-    TArray<TSharedPtr<FJsonValue>> BoxesArray;
-    for (const FIntPoint& BoxPos : Data.BoxPositions)
-    {
-        BoxesArray.Add(IntPointToJsonValue(BoxPos));
-    }
-    RootObj->SetArrayField(TEXT("boxes"), BoxesArray);
+    // Boxes are now stored as cells (CellType=Box), no separate "boxes" field
 
     // GroupStyles
     TArray<TSharedPtr<FJsonValue>> GroupStylesArray;
@@ -270,17 +310,20 @@ bool ULevelSerializer::LoadFromJson(const FString& FilePath, FLevelData& OutData
     // PlayerStart
     JsonValueToIntPoint(RootObj->TryGetField(TEXT("playerStart")), OutData.PlayerStart);
 
-    // Boxes
-    OutData.BoxPositions.Empty();
+    // Backward compat: convert old "boxes" array to Box cells
     const TArray<TSharedPtr<FJsonValue>>* BoxesArray;
     if (RootObj->TryGetArrayField(TEXT("boxes"), BoxesArray))
     {
         for (const TSharedPtr<FJsonValue>& BoxValue : *BoxesArray)
         {
-            FIntPoint BoxPos;
-            if (JsonValueToIntPoint(BoxValue, BoxPos))
+            FBoxData Box;
+            if (JsonValueToBoxData(BoxValue, Box))
             {
-                OutData.BoxPositions.Add(BoxPos);
+                FCellData BoxCell;
+                BoxCell.GridPos = Box.GridPos;
+                BoxCell.CellType = TEXT("Box");
+                BoxCell.VisualStyleId = Box.VisualStyleId;
+                OutData.Cells.Add(BoxCell);
             }
         }
     }
