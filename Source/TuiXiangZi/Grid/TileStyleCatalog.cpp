@@ -79,28 +79,6 @@ void UTileStyleCatalog::GenerateAllThumbnails()
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    // 创建临时灯光
-    AActor* LightActor = EditorWorld->SpawnActor<AActor>(
-        AActor::StaticClass(), FTransform(ThumbOrigin), SpawnParams);
-    if (!LightActor)
-    {
-        UE_LOG(LogTemp, Error, TEXT("TileStyleCatalog: Failed to spawn light actor!"));
-        return;
-    }
-
-    UDirectionalLightComponent* KeyLight = NewObject<UDirectionalLightComponent>(LightActor);
-    KeyLight->SetWorldRotation(FRotator(-45.0f, -45.0f, 0.0f));
-    KeyLight->Intensity = 3.0f;
-    KeyLight->RegisterComponent();
-
-    UDirectionalLightComponent* FillLight = NewObject<UDirectionalLightComponent>(LightActor);
-    FillLight->SetWorldRotation(FRotator(-30.0f, 135.0f, 0.0f));
-    FillLight->Intensity = 1.5f;
-    FillLight->RegisterComponent();
-
-    EditorWorld->SendAllEndOfFrameUpdates();
-    FlushRenderingCommands();
-
     // 创建临时 RenderTarget
     UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>(GetTransientPackage());
     RT->InitAutoFormat(ThumbnailResolution, ThumbnailResolution);
@@ -126,10 +104,22 @@ void UTileStyleCatalog::GenerateAllThumbnails()
             continue;
         }
 
-        UStaticMeshComponent* MeshComp = PreviewActor->FindComponentByClass<UStaticMeshComponent>();
-        if (!MeshComp || !MeshComp->GetStaticMesh())
+        // 找第一个有 Mesh 的 StaticMeshComponent（蓝图可能在 C++ MeshComp 之外另建了组件）
+        UStaticMeshComponent* MeshComp = nullptr;
+        TArray<UStaticMeshComponent*> AllMeshComps;
+        PreviewActor->GetComponents<UStaticMeshComponent>(AllMeshComps);
+        for (UStaticMeshComponent* SMC : AllMeshComps)
         {
-            UE_LOG(LogTemp, Warning, TEXT("  [%s] No StaticMesh found"), *Style.StyleId.ToString());
+            if (SMC->GetStaticMesh())
+            {
+                MeshComp = SMC;
+                break;
+            }
+        }
+
+        if (!MeshComp)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("  [%s] No StaticMeshComponent with valid mesh found"), *Style.StyleId.ToString());
             PreviewActor->Destroy();
             continue;
         }
@@ -144,18 +134,35 @@ void UTileStyleCatalog::GenerateAllThumbnails()
         FVector CamPos = Bounds.Origin + FVector(-Radius * 2.5f, Radius * 1.5f, Radius * 2.0f);
         FRotator CamRot = (Bounds.Origin - CamPos).Rotation();
 
-        // 创建 SceneCapture
+        // 灯光：相机方向主光 + 三向补光，无阴影，均匀照亮
+        auto AddLight = [&](FRotator Rot, float Intensity)
+        {
+            UDirectionalLightComponent* L = NewObject<UDirectionalLightComponent>(PreviewActor);
+            L->SetWorldRotation(Rot);
+            L->Intensity = Intensity;
+            L->CastShadows = false;
+            L->CastStaticShadows = false;
+            L->CastDynamicShadows = false;
+            L->RegisterComponent();
+        };
+
+        AddLight(CamRot, 4.0f);                            // 相机方向主光
+        AddLight(FRotator(-45.0f, -45.0f, 0.0f), 2.0f);   // 左上前
+        AddLight(FRotator(-45.0f, 135.0f, 0.0f), 2.0f);   // 右上后
+        AddLight(FRotator(-90.0f, 0.0f, 0.0f), 1.5f);     // 正上方
+
+        // 创建 SceneCapture（Actor 已在远处，不需要 ShowOnlyList）
         USceneCaptureComponent2D* Capture = NewObject<USceneCaptureComponent2D>(PreviewActor);
         Capture->TextureTarget = RT;
         Capture->SetWorldLocationAndRotation(CamPos, CamRot);
         Capture->FOVAngle = 30.0f;
-        Capture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
+        Capture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
         Capture->bCaptureEveryFrame = false;
         Capture->bCaptureOnMovement = false;
-        Capture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
-        Capture->ShowOnlyActors.Add(PreviewActor);
+        Capture->bAlwaysPersistRenderingState = true;
         Capture->RegisterComponent();
 
+        // 等待着色器编译和场景代理就绪
         EditorWorld->SendAllEndOfFrameUpdates();
         FlushRenderingCommands();
 
@@ -182,9 +189,6 @@ void UTileStyleCatalog::GenerateAllThumbnails()
 
         PreviewActor->Destroy();
     }
-
-    // 清理
-    LightActor->Destroy();
 
     // 标记 DataAsset 为已修改，提示用户保存
     MarkPackageDirty();

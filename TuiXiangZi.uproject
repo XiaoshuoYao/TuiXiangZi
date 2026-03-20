@@ -20,7 +20,10 @@
 		},
 		{
 			"Name": "UE5MCP",
-			"Enabled": false
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
 		}
 	]
 }
