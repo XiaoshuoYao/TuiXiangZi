@@ -4,9 +4,11 @@
 #include "LevelData/LevelDataTypes.h"
 #include "Gameplay/SokobanCharacter.h"
 #include "Gameplay/PushableBoxComponent.h"
+#include "Gameplay/GridTileComponent.h"
 #include "Gameplay/Mechanisms/GridMechanismComponent.h"
 #include "Gameplay/Mechanisms/DoorMechanismComponent.h"
 #include "Gameplay/Mechanisms/GoalMechanismComponent.h"
+#include "Gameplay/Modifiers/TileModifierComponent.h"
 #include "DrawDebugHelpers.h"
 
 AGridManager::AGridManager()
@@ -109,10 +111,10 @@ void AGridManager::SetCellGroupId(FIntPoint GridPos, int32 GroupId)
     {
         if (*Found)
         {
-            TArray<UGridMechanismComponent*> Mechs;
-            (*Found)->GetComponents<UGridMechanismComponent>(Mechs);
-            for (UGridMechanismComponent* M : Mechs)
-                M->GroupId = GroupId;
+            TArray<UGridTileComponent*> TileComps;
+            (*Found)->GetComponents<UGridTileComponent>(TileComps);
+            for (UGridTileComponent* Comp : TileComps)
+                Comp->GroupId = GroupId;
         }
     }
 }
@@ -174,6 +176,8 @@ void AGridManager::ClearGrid()
     DestroyAllBoxActors();
     DestroyAllVisualActors();
     AllMechanisms.Empty();
+    AllModifiers.Empty();
+    ModifierLookup.Empty();
     GridCells.Empty();
 }
 
@@ -216,7 +220,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
             UpdateOccupancy(FromGrid, TargetPos, MovingActor);
             OnActorLogicalMoved.Broadcast(MovingActor, FromGrid, TargetPos);
 
-            if (TargetCell->CellType == EGridCellType::Ice)
+            if (GetModifierAt(TargetPos) && GetModifierAt(TargetPos)->ShouldContinueMovement(Direction))
             {
                 FIntPoint SlideDest = CalculateIceSlideDestination(TargetPos, Direction);
                 if (SlideDest != TargetPos)
@@ -230,7 +234,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
         {
             FGridCell* BoxTargetCell = GridCells.Find(BoxTargetPos);
 
-            if (BoxTargetCell->CellType == EGridCellType::Ice)
+            if (UTileModifierComponent* BoxMod = GetModifierAt(BoxTargetPos); BoxMod && BoxMod->ShouldContinueMovement(Direction))
             {
                 UpdateOccupancy(TargetPos, BoxTargetPos, BoxActor);
                 FIntPoint BoxFinalDest = CalculateIceSlideDestination(BoxTargetPos, Direction);
@@ -254,7 +258,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
             OnActorLogicalMoved.Broadcast(MovingActor, FromGrid, TargetPos);
 
             FGridCell* PlayerNewCell = GridCells.Find(TargetPos);
-            if (PlayerNewCell && PlayerNewCell->CellType == EGridCellType::Ice)
+            if (UTileModifierComponent* PlayerMod = GetModifierAt(TargetPos); PlayerMod && PlayerMod->ShouldContinueMovement(Direction))
             {
                 FIntPoint SlideDest = CalculateIceSlideDestination(TargetPos, Direction);
                 if (SlideDest != TargetPos)
@@ -275,7 +279,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
         UpdateOccupancy(FromGrid, TargetPos, MovingActor);
         OnActorLogicalMoved.Broadcast(MovingActor, FromGrid, TargetPos);
 
-        if (TargetCell->CellType == EGridCellType::Ice)
+        if (UTileModifierComponent* Mod = GetModifierAt(TargetPos); Mod && Mod->ShouldContinueMovement(Direction))
         {
             FIntPoint SlideDest = CalculateIceSlideDestination(TargetPos, Direction);
             if (SlideDest != TargetPos)
@@ -335,7 +339,8 @@ FIntPoint AGridManager::CalculateIceSlideDestination(FIntPoint StartPos, EMoveDi
         const FGridCell& NextCell = GridCells[NextPos];
         if (!IsCellPassable(NextPos)) break;
         if (NextCell.OccupyingActor.IsValid()) break;
-        if (NextCell.CellType != EGridCellType::Ice) break;
+        UTileModifierComponent* Mod = GetModifierAt(NextPos);
+        if (!Mod || !Mod->ShouldContinueMovement(Direction)) break;
         CurrentPos = NextPos;
     }
 
@@ -407,6 +412,13 @@ UGridMechanismComponent* AGridManager::GetMechanismAt(FIntPoint GridPos) const
         if (M && M->GridPos == GridPos)
             return M;
     }
+    return nullptr;
+}
+
+UTileModifierComponent* AGridManager::GetModifierAt(FIntPoint GridPos) const
+{
+    if (const auto* Found = ModifierLookup.Find(GridPos))
+        return *Found;
     return nullptr;
 }
 
@@ -619,14 +631,21 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
     Visual->InitializeForGrid(CellSize, GridPos);
     VisualActors.Add(GridPos, Visual);
 
-    // Generic mechanism registration (supports multiple components per actor)
-    TArray<UGridMechanismComponent*> MechComps;
-    Visual->GetComponents<UGridMechanismComponent>(MechComps);
-    for (UGridMechanismComponent* MechComp : MechComps)
+    // Register all grid tile components (mechanisms and modifiers)
+    TArray<UGridTileComponent*> TileComps;
+    Visual->GetComponents<UGridTileComponent>(TileComps);
+    for (UGridTileComponent* Comp : TileComps)
     {
-        MechComp->GridPos = GridPos;
-        MechComp->GroupId = Cell.GroupId;
-        AllMechanisms.Add(MechComp);
+        Comp->GridPos = GridPos;
+        Comp->GroupId = Cell.GroupId;
+
+        if (UGridMechanismComponent* MechComp = Cast<UGridMechanismComponent>(Comp))
+            AllMechanisms.Add(MechComp);
+        if (UTileModifierComponent* ModComp = Cast<UTileModifierComponent>(Comp))
+        {
+            AllModifiers.Add(ModComp);
+            ModifierLookup.Add(GridPos, ModComp);
+        }
     }
 }
 
@@ -654,6 +673,15 @@ void AGridManager::DestroyVisualActor(FIntPoint GridPos)
             (*Found)->GetComponents<UGridMechanismComponent>(MechComps);
             for (UGridMechanismComponent* Mech : MechComps)
                 AllMechanisms.Remove(Mech);
+
+            TArray<UTileModifierComponent*> ModComps;
+            (*Found)->GetComponents<UTileModifierComponent>(ModComps);
+            for (UTileModifierComponent* Mod : ModComps)
+            {
+                AllModifiers.Remove(Mod);
+                ModifierLookup.Remove(Mod->GridPos);
+            }
+
             (*Found)->Destroy();
         }
         VisualActors.Remove(GridPos);

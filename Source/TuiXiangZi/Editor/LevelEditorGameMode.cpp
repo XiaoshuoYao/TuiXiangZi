@@ -5,7 +5,7 @@
 #include "Grid/TileStyleCatalog.h"
 #include "Grid/TileVisualActor.h"
 #include "Grid/GridTypes.h"
-#include "Gameplay/Mechanisms/GridMechanismComponent.h"
+#include "Gameplay/GridTileComponent.h"
 #include "LevelData/LevelDataTypes.h"
 #include "LevelData/LevelSerializer.h"
 #include "Kismet/GameplayStatics.h"
@@ -68,6 +68,8 @@ void ALevelEditorGameMode::BeginPlay()
     {
         NewLevel(8, 6);
     }
+
+    FocusEditorCamera();
 }
 
 void ALevelEditorGameMode::SetCurrentBrush(EEditorBrush NewBrush)
@@ -439,6 +441,7 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
 
     bIsDirty = false;
     UpdateGridVisualizerBounds();
+    FocusEditorCamera();
 }
 
 bool ALevelEditorGameMode::SaveLevel(const FString& FileName)
@@ -493,6 +496,7 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
 
     RestoreFromLevelData(Data);
     bIsDirty = false;
+    FocusEditorCamera();
     return true;
 }
 
@@ -680,10 +684,10 @@ void ALevelEditorGameMode::ApplyPostPaintFlow(FIntPoint Pos)
     ATileVisualActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
     if (!Visual) return;
 
-    TArray<UGridMechanismComponent*> Mechs;
-    Visual->GetComponents<UGridMechanismComponent>(Mechs);
+    TArray<UGridTileComponent*> TileComps;
+    Visual->GetComponents<UGridTileComponent>(TileComps);
 
-    for (UGridMechanismComponent* M : Mechs)
+    for (UGridTileComponent* M : TileComps)
     {
         EEditorPlacementFlow Flow = M->GetEditorPlacementFlow();
         if (Flow == EEditorPlacementFlow::AssignGroup)
@@ -705,12 +709,12 @@ bool ALevelEditorGameMode::IsGroupAnchor(FIntPoint Pos) const
     ATileVisualActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
     if (!Visual) return false;
 
-    TArray<UGridMechanismComponent*> Mechs;
-    Visual->GetComponents<UGridMechanismComponent>(Mechs);
+    TArray<UGridTileComponent*> TileComps;
+    Visual->GetComponents<UGridTileComponent>(TileComps);
 
-    for (const UGridMechanismComponent* M : Mechs)
+    for (const UGridTileComponent* Comp : TileComps)
     {
-        if (M->GetEditorPlacementFlow() == EEditorPlacementFlow::AssignGroup)
+        if (Comp->GetEditorPlacementFlow() == EEditorPlacementFlow::AssignGroup)
             return true;
     }
     return false;
@@ -879,4 +883,25 @@ void ALevelEditorGameMode::UpdateGridVisualizerBounds()
 
     FIntRect Bounds = GridManagerRef->GetGridBounds();
     GridVisualizerRef->UpdateGridLines(Bounds.Min, Bounds.Max, GridManagerRef->CellSize);
+}
+
+void ALevelEditorGameMode::FocusEditorCamera()
+{
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    if (!PC)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("FocusEditorCamera: No PlayerController found!"));
+        return;
+    }
+
+    ALevelEditorPawn* EditorPawn = Cast<ALevelEditorPawn>(PC->GetPawn());
+    if (!EditorPawn)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("FocusEditorCamera: No EditorPawn found! Pawn=%s"),
+            PC->GetPawn() ? *PC->GetPawn()->GetName() : TEXT("nullptr"));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("FocusEditorCamera: Calling FocusCameraOnGrid on %s"), *EditorPawn->GetName());
+    EditorPawn->FocusCameraOnGrid();
 }

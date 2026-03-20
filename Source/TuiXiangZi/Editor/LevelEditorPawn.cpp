@@ -75,6 +75,53 @@ void ALevelEditorPawn::BeginPlay()
     }
 }
 
+void ALevelEditorPawn::FocusCameraOnGrid()
+{
+    if (!GridManagerRef)
+    {
+        GridManagerRef = Cast<AGridManager>(
+            UGameplayStatics::GetActorOfClass(GetWorld(), AGridManager::StaticClass()));
+    }
+    if (!GridManagerRef)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("FocusCameraOnGrid: GridManagerRef is null!"));
+        return;
+    }
+
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    UE_LOG(LogTemp, Log, TEXT("FocusCameraOnGrid: GridBounds Min=(%d,%d) Max=(%d,%d)"),
+        Bounds.Min.X, Bounds.Min.Y, Bounds.Max.X, Bounds.Max.Y);
+
+    // Compute grid center in world space
+    FVector MinWorld = GridManagerRef->GridToWorld(Bounds.Min);
+    FVector MaxWorld = GridManagerRef->GridToWorld(FIntPoint(Bounds.Max.X - 1, Bounds.Max.Y - 1));
+    FVector GridCenter = (MinWorld + MaxWorld) * 0.5f;
+    GridCenter.Z = 0.0f;
+
+    UE_LOG(LogTemp, Log, TEXT("FocusCameraOnGrid: GridCenter=(%.1f, %.1f, %.1f)"),
+        GridCenter.X, GridCenter.Y, GridCenter.Z);
+
+    // Choose camera height based on grid extent
+    float GridExtent = FMath::Max(MaxWorld.X - MinWorld.X, MaxWorld.Y - MinWorld.Y)
+                       + GridManagerRef->CellSize;
+    float CameraHeight = FMath::Max(GridExtent * 0.8f, 400.0f);
+
+    // Set camera rotation to default pitch + yaw 90 (camera looks along +Y)
+    FRotator CamRot(-50.0f, 90.0f, 0.0f);
+    SetActorRotation(CamRot);
+
+    float PitchRad = FMath::DegreesToRadians(50.0f);
+    float Distance = CameraHeight / FMath::Sin(PitchRad);
+    FVector CamPos = GridCenter - CamRot.Vector() * Distance;
+
+    UE_LOG(LogTemp, Log, TEXT("FocusCameraOnGrid: CamRot=(P=%.1f, Y=%.1f, R=%.1f) Height=%.1f Distance=%.1f"),
+        CamRot.Pitch, CamRot.Yaw, CamRot.Roll, CameraHeight, Distance);
+    UE_LOG(LogTemp, Log, TEXT("FocusCameraOnGrid: Setting camera to (%.1f, %.1f, %.1f)"),
+        CamPos.X, CamPos.Y, CamPos.Z);
+
+    SetActorLocation(CamPos);
+}
+
 void ALevelEditorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);

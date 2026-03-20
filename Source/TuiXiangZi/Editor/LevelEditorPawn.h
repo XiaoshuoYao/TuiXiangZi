@@ -27,6 +27,9 @@ public:
     // Raycast from mouse screen position to the grid plane (Z=0)
     bool RaycastToGrid(FIntPoint& OutGridPos) const;
 
+    /** Move camera to look at the center of existing grid cells. */
+    void FocusCameraOnGrid();
+
 protected:
     // ===== Camera =====
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")

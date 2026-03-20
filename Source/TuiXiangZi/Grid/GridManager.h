@@ -10,8 +10,10 @@ struct FTileVisualStyle;
 struct FMechanismGroupStyleData;
 class UTileStyleCatalog;
 class ATileVisualActor;
+class UGridTileComponent;
 class UGridMechanismComponent;
 class UDoorMechanismComponent;
+class UTileModifierComponent;
 struct FBoxData;
 class ASokobanCharacter;
 class UPushableBoxComponent;
@@ -105,6 +107,9 @@ public:
 
     void ApplyMechanismGroupStyles(const TArray<FMechanismGroupStyleData>& GroupStyles);
 
+    // ===== Modifier System =====
+    UTileModifierComponent* GetModifierAt(FIntPoint GridPos) const;
+
     // ===== Box System =====
     /** 在指定位置生成一个箱子 Actor（由 SpawnOrUpdateVisualActor 和 Undo 使用） */
     void SpawnBoxActorAt(FIntPoint GridPos, FName VisualStyleId);
@@ -153,6 +158,12 @@ protected:
     // ===== Mechanism Tracking =====
     UPROPERTY()
     TArray<UGridMechanismComponent*> AllMechanisms;
+
+    // ===== Modifier Tracking =====
+    UPROPERTY()
+    TArray<UTileModifierComponent*> AllModifiers;
+
+    TMap<FIntPoint, UTileModifierComponent*> ModifierLookup;
 
     // ===== Box Tracking =====
     UPROPERTY()

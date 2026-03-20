@@ -216,4 +216,7 @@ protected:
 
     /** Count plates for a given group. */
     int32 CountPlatesForGroup(int32 GroupId) const;
+
+    /** Tell the editor pawn to focus camera on the current grid. */
+    void FocusEditorCamera();
 };
