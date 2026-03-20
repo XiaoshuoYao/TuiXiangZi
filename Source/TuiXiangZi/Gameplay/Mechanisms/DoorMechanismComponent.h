@@ -19,6 +19,7 @@ public:
 	virtual void OnDeactivate() override;
 	virtual bool BlocksPassage() const override { return true; }
 	virtual bool IsCurrentlyBlocking() const override { return !bIsOpen; }
+	virtual EEditorPlacementFlow GetEditorPlacementFlow() const override { return EEditorPlacementFlow::AssignGroup; }
 
 	void SetDoorOpen(bool bOpen);
 	void SetDoorStateImmediate(bool bOpen);

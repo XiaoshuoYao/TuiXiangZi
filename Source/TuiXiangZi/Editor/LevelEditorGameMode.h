@@ -10,6 +10,7 @@
 class AGridManager;
 class AEditorGridVisualizer;
 class UTileStyleCatalog;
+class ATileVisualActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBrushChanged, EEditorBrush, NewBrush);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEditorModeChanged, EEditorMode, NewMode);
@@ -203,6 +204,12 @@ protected:
 
     /** Handle click during PlacingPlatesForDoor / EditingDoorGroup modes. */
     void HandlePlateModePaint(FIntPoint Pos);
+
+    /** After placing a cell, check spawned actor's components for editor placement flows. */
+    void ApplyPostPaintFlow(FIntPoint Pos);
+
+    /** Check if the visual actor at this position has a component that owns a group (e.g. DoorMechanism). */
+    bool IsGroupAnchor(FIntPoint Pos) const;
 
     /** Generate a default color for a new group. */
     FLinearColor GetDefaultGroupColor(int32 GroupId) const;

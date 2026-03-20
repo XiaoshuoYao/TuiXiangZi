@@ -69,6 +69,12 @@ public:
 
     void SetCellOccupant(FIntPoint GridPos, AActor* Occupant);
 
+    /** Update GroupId on both the cell data and any spawned mechanism components. */
+    void SetCellGroupId(FIntPoint GridPos, int32 GroupId);
+
+    /** Return the visual actor at a grid position, or nullptr. */
+    ATileVisualActor* GetVisualActorAt(FIntPoint GridPos) const;
+
     // ===== Dynamic Bounds =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Query")
     FIntRect GetGridBounds() const;
@@ -122,13 +128,10 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Grid|Debug")
     TMap<FIntPoint, FGridCell> GridCells;
 
-    UPROPERTY(VisibleAnywhere, Category = "Grid|Debug")
-    TArray<FIntPoint> GoalPositions;
-
     UPROPERTY()
     TMap<FIntPoint, ATileVisualActor*> VisualActors;
 
-    /** 机关/Goal 格子底下的地板 Actor */
+    /** 机关格子底下的地板 Actor */
     UPROPERTY()
     TMap<FIntPoint, ATileVisualActor*> FloorUnderlays;
 

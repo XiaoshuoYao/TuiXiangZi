@@ -11,6 +11,7 @@ class TUIXIANGZI_API UPressurePlateMechanismComponent : public UGridMechanismCom
 	GENERATED_BODY()
 
 public:
+	virtual bool IsGroupTrigger() const override { return true; }
 	virtual void OnActivate() override;
 	virtual void OnDeactivate() override;
 };

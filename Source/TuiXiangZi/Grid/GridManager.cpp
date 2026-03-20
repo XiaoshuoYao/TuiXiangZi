@@ -6,6 +6,7 @@
 #include "Gameplay/PushableBoxComponent.h"
 #include "Gameplay/Mechanisms/GridMechanismComponent.h"
 #include "Gameplay/Mechanisms/DoorMechanismComponent.h"
+#include "Gameplay/Mechanisms/GoalMechanismComponent.h"
 #include "DrawDebugHelpers.h"
 
 AGridManager::AGridManager()
@@ -99,6 +100,30 @@ void AGridManager::SetCellOccupant(FIntPoint GridPos, AActor* Occupant)
     }
 }
 
+void AGridManager::SetCellGroupId(FIntPoint GridPos, int32 GroupId)
+{
+    if (FGridCell* Cell = GridCells.Find(GridPos))
+        Cell->GroupId = GroupId;
+
+    if (const auto* Found = VisualActors.Find(GridPos))
+    {
+        if (*Found)
+        {
+            TArray<UGridMechanismComponent*> Mechs;
+            (*Found)->GetComponents<UGridMechanismComponent>(Mechs);
+            for (UGridMechanismComponent* M : Mechs)
+                M->GroupId = GroupId;
+        }
+    }
+}
+
+ATileVisualActor* AGridManager::GetVisualActorAt(FIntPoint GridPos) const
+{
+    if (const auto* Found = VisualActors.Find(GridPos))
+        return *Found;
+    return nullptr;
+}
+
 // ---- Dynamic Bounds ----
 FIntRect AGridManager::GetGridBounds() const
 {
@@ -128,8 +153,6 @@ void AGridManager::InitFromLevelData(const FLevelData& Data)
         Cell.GroupId = CellData.GroupId;
         Cell.ExtraParam = CellData.ExtraParam;
         SetCell(CellData.GridPos, Cell);
-        if (Cell.CellType == EGridCellType::Goal)
-            GoalPositions.Add(CellData.GridPos);
     }
     ApplyMechanismGroupStyles(Data.GroupStyles);
 }
@@ -152,7 +175,6 @@ void AGridManager::ClearGrid()
     DestroyAllVisualActors();
     AllMechanisms.Empty();
     GridCells.Empty();
-    GoalPositions.Empty();
 }
 
 // ---- Movement ----
@@ -328,17 +350,17 @@ void AGridManager::PostMoveSettlement()
 
 void AGridManager::CheckGoalCondition()
 {
-    for (const FIntPoint& GoalPos : GoalPositions)
+    for (UGridMechanismComponent* M : AllMechanisms)
     {
-        if (const FGridCell* Cell = GridCells.Find(GoalPos))
+        UGoalMechanismComponent* GoalComp = Cast<UGoalMechanismComponent>(M);
+        if (!GoalComp) continue;
+
+        const FGridCell* Cell = GridCells.Find(GoalComp->GridPos);
+        if (!Cell || !Cell->OccupyingActor.IsValid()) continue;
+
+        if (Cast<ASokobanCharacter>(Cell->OccupyingActor.Get()))
         {
-            if (Cell->OccupyingActor.IsValid())
-            {
-                if (Cast<ASokobanCharacter>(Cell->OccupyingActor.Get()))
-                {
-                    OnPlayerEnteredGoal.Broadcast(GoalPos);
-                }
-            }
+            OnPlayerEnteredGoal.Broadcast(GoalComp->GridPos);
         }
     }
 }
@@ -349,7 +371,7 @@ void AGridManager::CheckAllPressurePlateGroups()
     TSet<int32> GroupIds;
     for (UGridMechanismComponent* M : AllMechanisms)
     {
-        if (M && M->GroupId >= 0 && !M->BlocksPassage())
+        if (M && M->GroupId >= 0 && M->IsGroupTrigger())
             GroupIds.Add(M->GroupId);
     }
 
@@ -357,15 +379,17 @@ void AGridManager::CheckAllPressurePlateGroups()
     {
         bool bAllActive = true;
 
+        // Check triggers (pressure plates)
         for (UGridMechanismComponent* M : AllMechanisms)
         {
-            if (!M || M->GroupId != GId || M->BlocksPassage()) continue;
+            if (!M || M->GroupId != GId || !M->IsGroupTrigger()) continue;
             const FGridCell* Cell = GridCells.Find(M->GridPos);
             bool bOccupied = Cell && Cell->OccupyingActor.IsValid();
             bOccupied ? M->OnActivate() : M->OnDeactivate();
             if (!bOccupied) bAllActive = false;
         }
 
+        // Activate/deactivate actuators (doors)
         for (UGridMechanismComponent* M : AllMechanisms)
         {
             if (!M || M->GroupId != GId || !M->BlocksPassage()) continue;
@@ -595,8 +619,10 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
     Visual->InitializeForGrid(CellSize, GridPos);
     VisualActors.Add(GridPos, Visual);
 
-    // Generic mechanism registration
-    if (UGridMechanismComponent* MechComp = Visual->FindComponentByClass<UGridMechanismComponent>())
+    // Generic mechanism registration (supports multiple components per actor)
+    TArray<UGridMechanismComponent*> MechComps;
+    Visual->GetComponents<UGridMechanismComponent>(MechComps);
+    for (UGridMechanismComponent* MechComp : MechComps)
     {
         MechComp->GridPos = GridPos;
         MechComp->GroupId = Cell.GroupId;
@@ -624,7 +650,9 @@ void AGridManager::DestroyVisualActor(FIntPoint GridPos)
     {
         if (*Found)
         {
-            if (UGridMechanismComponent* Mech = (*Found)->FindComponentByClass<UGridMechanismComponent>())
+            TArray<UGridMechanismComponent*> MechComps;
+            (*Found)->GetComponents<UGridMechanismComponent>(MechComps);
+            for (UGridMechanismComponent* Mech : MechComps)
                 AllMechanisms.Remove(Mech);
             (*Found)->Destroy();
         }

@@ -174,19 +174,26 @@ void UTileStyleCatalog::RenderActorClassToTarget(
 
     // 从蓝图实例中找到第一个 StaticMeshComponent 来确定包围盒和渲染内容
     UStaticMeshComponent* MeshComp = PreviewActor->FindComponentByClass<UStaticMeshComponent>();
-    UStaticMesh* Mesh = MeshComp ? MeshComp->GetStaticMesh() : nullptr;
-
-    if (!Mesh)
+    if (!MeshComp || !MeshComp->GetStaticMesh())
     {
         PreviewActor->Destroy();
         return;
     }
 
-    // 根据包围盒计算相机位置
-    FBoxSphereBounds Bounds = Mesh->GetBounds();
+    // 确保组件已注册并更新包围盒
+    if (!MeshComp->IsRegistered())
+    {
+        MeshComp->RegisterComponent();
+    }
+
+    // 确保场景中所有 Primitive 已注册
+    PreviewWorld->SendAllEndOfFrameUpdates();
+
+    // 使用组件的世界空间包围盒（包含蓝图中设置的 Transform）
+    FBoxSphereBounds Bounds = MeshComp->Bounds;
     float Radius = FMath::Max(Bounds.SphereRadius, 1.0f);
 
-    FVector CamPos = Bounds.Origin + FVector(-Radius * 2.0f, Radius * 1.0f, Radius * 1.5f);
+    FVector CamPos = Bounds.Origin + FVector(-Radius * 2.5f, Radius * 1.5f, Radius * 2.0f);
     FRotator CamRot = (Bounds.Origin - CamPos).Rotation();
 
     // SceneCapture 组件
@@ -195,12 +202,15 @@ void UTileStyleCatalog::RenderActorClassToTarget(
     Capture->TextureTarget = RT;
     Capture->SetWorldLocationAndRotation(CamPos, CamRot);
     Capture->FOVAngle = 30.0f;
-    Capture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+    // SceneColorHDR 跳过 Tonemapping，EditorPreview 世界没有完整后处理管线，
+    // 用 FinalColorLDR 会导致全黑
+    Capture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
     Capture->bCaptureEveryFrame = false;
     Capture->bCaptureOnMovement = false;
 
-    // 确保场景中所有 PrimitiveSceneInfo 已注册，否则捕获到空场景
-    PreviewWorld->SendAllEndOfFrameUpdates();
+    // 只渲染目标 Actor 的组件，避免捕获到其他内容
+    Capture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
+    Capture->ShowOnlyActors.Add(PreviewActor);
 
     // 执行一次捕获
     Capture->CaptureScene();

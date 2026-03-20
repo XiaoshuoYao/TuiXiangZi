@@ -264,6 +264,42 @@ void UEditorSidebarWidget::InitializeWithCatalog(UTileStyleCatalog* Catalog)
 }
 
 // ============================================================
+// EnterPlateMode
+// ============================================================
+void UEditorSidebarWidget::EnterPlateMode()
+{
+	// Disable brush buttons so user can't switch brush
+	for (UButton* Btn : BrushButtons)
+	{
+		if (Btn)
+		{
+			Btn->SetIsEnabled(false);
+		}
+	}
+
+	// Show pressure plate variants
+	RefreshVariantPanel(EEditorBrush::PressurePlate);
+}
+
+// ============================================================
+// ExitPlateMode
+// ============================================================
+void UEditorSidebarWidget::ExitPlateMode()
+{
+	// Re-enable brush buttons
+	for (UButton* Btn : BrushButtons)
+	{
+		if (Btn)
+		{
+			Btn->SetIsEnabled(true);
+		}
+	}
+
+	// Restore variant panel for current brush
+	RefreshVariantPanel(CurrentBrush);
+}
+
+// ============================================================
 // BrushToCellType
 // ============================================================
 EGridCellType UEditorSidebarWidget::BrushToCellType(EEditorBrush Brush)

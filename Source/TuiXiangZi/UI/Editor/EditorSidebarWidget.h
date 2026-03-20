@@ -28,6 +28,12 @@ public:
 
 	void InitializeWithCatalog(UTileStyleCatalog* Catalog);
 
+	/** Enter pressure plate placement mode: disable brush buttons, show plate variants. */
+	void EnterPlateMode();
+
+	/** Exit pressure plate placement mode: re-enable brush buttons, restore current brush variants. */
+	void ExitPlateMode();
+
 	// --- Delegates (bound by MainWidget) ---
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBrushSelected, EEditorBrush, Brush);
 	UPROPERTY(BlueprintAssignable, Category = "Editor|Sidebar")

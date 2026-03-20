@@ -6,6 +6,15 @@
 
 class UStaticMeshComponent;
 
+/** Describes what editor workflow a mechanism triggers when placed. */
+UENUM()
+enum class EEditorPlacementFlow : uint8
+{
+	None           UMETA(DisplayName = "None"),
+	AssignGroup    UMETA(DisplayName = "Assign Group"),
+	// PairPlacement  — future: teleporter pair placement
+};
+
 UCLASS(Abstract, Blueprintable, ClassGroup = "GridMechanism",
 	meta = (BlueprintSpawnableComponent))
 class TUIXIANGZI_API UGridMechanismComponent : public UActorComponent
@@ -27,6 +36,13 @@ public:
 	// ---- Passability ----
 	virtual bool BlocksPassage() const { return false; }
 	virtual bool IsCurrentlyBlocking() const { return false; }
+
+	// ---- Group Role ----
+	/** Whether this mechanism acts as a trigger in the group system (e.g. pressure plate). */
+	virtual bool IsGroupTrigger() const { return false; }
+
+	// ---- Editor Placement Flow ----
+	virtual EEditorPlacementFlow GetEditorPlacementFlow() const { return EEditorPlacementFlow::None; }
 
 	// ---- Color system ----
 	virtual void SetGroupColor(FLinearColor BaseColor, FLinearColor ActiveColor);

@@ -3,7 +3,9 @@
 #include "Editor/EditorGridVisualizer.h"
 #include "Grid/GridManager.h"
 #include "Grid/TileStyleCatalog.h"
+#include "Grid/TileVisualActor.h"
 #include "Grid/GridTypes.h"
+#include "Gameplay/Mechanisms/GridMechanismComponent.h"
 #include "LevelData/LevelDataTypes.h"
 #include "LevelData/LevelSerializer.h"
 #include "Kismet/GameplayStatics.h"
@@ -139,28 +141,13 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     case EEditorBrush::Wall:
     case EEditorBrush::Ice:
     case EEditorBrush::Goal:
+    case EEditorBrush::Door:
     {
         FGridCell Cell;
         Cell.CellType = BrushToCellType(CurrentBrush);
         Cell.VisualStyleId = CurrentVisualStyleId;
         GridManagerRef->SetCell(Pos, Cell);
-        break;
-    }
-    case EEditorBrush::Door:
-    {
-        // Door brush: create new group, place door, enter plate placement mode
-        int32 NewGroupId = CreateNewGroup();
-
-        FGridCell Cell;
-        Cell.CellType = EGridCellType::Door;
-        Cell.GroupId = NewGroupId;
-        Cell.VisualStyleId = CurrentVisualStyleId;
-        GridManagerRef->SetCell(Pos, Cell);
-
-        // Enter plate placement mode for this group
-        CurrentGroupId = NewGroupId;
-        SetEditorMode(EEditorMode::PlacingPlatesForDoor);
-        UE_LOG(LogTemp, Log, TEXT("Editor: Placed door for group %d. Click to place plates, Esc to finish."), NewGroupId);
+        ApplyPostPaintFlow(Pos);
         break;
     }
     case EEditorBrush::PressurePlate:
@@ -221,8 +208,8 @@ void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
             return;
         }
 
-        // Clicking existing door of same group -> ignore
-        if (ExistingCell.CellType == EGridCellType::Door && ExistingCell.GroupId == CurrentGroupId)
+        // Clicking existing group anchor of same group -> ignore
+        if (IsGroupAnchor(Pos) && ExistingCell.GroupId == CurrentGroupId)
         {
             return;
         }
@@ -242,6 +229,7 @@ void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
     FGridCell Cell;
     Cell.CellType = EGridCellType::PressurePlate;
     Cell.GroupId = CurrentGroupId;
+    Cell.VisualStyleId = CurrentVisualStyleId;
     GridManagerRef->SetCell(Pos, Cell);
     UpdateGridVisualizerBounds();
 }
@@ -250,28 +238,24 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
 
-    // Check if erasing a door - also delete entire group
-    if (GridManagerRef->HasCell(Pos))
+    // Check if erasing a group anchor (any cell whose BP has a component with AssignGroup flow)
+    if (IsGroupAnchor(Pos))
     {
         FGridCell Cell = GridManagerRef->GetCell(Pos);
-        if (Cell.CellType == EGridCellType::Door)
+        int32 GroupId = Cell.GroupId;
+        DeleteGroup(GroupId);
+        if (PlayerStartPos == Pos)
         {
-            int32 DoorGroupId = Cell.GroupId;
-            // Delete entire group (door + all plates)
-            DeleteGroup(DoorGroupId);
-            if (PlayerStartPos == Pos)
+            PlayerStartPos = FIntPoint(0, 0);
+            if (PlayerStartMarker)
             {
-                PlayerStartPos = FIntPoint(0, 0);
-                if (PlayerStartMarker)
-                {
-                    PlayerStartMarker->Destroy();
-                    PlayerStartMarker = nullptr;
-                }
+                PlayerStartMarker->Destroy();
+                PlayerStartMarker = nullptr;
             }
-            bIsDirty = true;
-            UpdateGridVisualizerBounds();
-            return;
         }
+        bIsDirty = true;
+        UpdateGridVisualizerBounds();
+        return;
     }
 
     // Check if the cell had a floor underlay (Wall, PressurePlate, etc.)
@@ -329,8 +313,8 @@ bool ALevelEditorGameMode::ShouldConfirmErase(FIntPoint GridPos) const
     if (PlayerStartPos == GridPos) return true;
     if (GridManagerRef && GridManagerRef->HasCell(GridPos))
     {
+        if (IsGroupAnchor(GridPos)) return true;
         FGridCell Cell = GridManagerRef->GetCell(GridPos);
-        if (Cell.CellType == EGridCellType::Door) return true;
         if (Cell.CellType == EGridCellType::Goal) return true;
     }
     return false;
@@ -344,8 +328,8 @@ FString ALevelEditorGameMode::GetEraseWarning(FIntPoint GridPos) const
     if (GridManagerRef && GridManagerRef->HasCell(GridPos))
     {
         FGridCell Cell = GridManagerRef->GetCell(GridPos);
-        if (Cell.CellType == EGridCellType::Door)
-            return FString::Printf(TEXT("Erasing this Door will delete the entire group %d (door + all plates)!"), Cell.GroupId);
+        if (IsGroupAnchor(GridPos))
+            return FString::Printf(TEXT("Erasing this will delete the entire group %d (and all its plates)!"), Cell.GroupId);
         if (Cell.CellType == EGridCellType::Goal)
             return TEXT("This cell is the Goal!");
     }
@@ -404,7 +388,7 @@ FLevelValidationResult ALevelEditorGameMode::ValidateLevel() const
                 FIntPoint Pos(X, Y);
                 if (!GridManagerRef->HasCell(Pos)) continue;
                 FGridCell Cell = GridManagerRef->GetCell(Pos);
-                if (Cell.CellType == EGridCellType::Door) DoorGroups.Add(Cell.GroupId);
+                if (IsGroupAnchor(Pos)) DoorGroups.Add(Cell.GroupId);
                 if (Cell.CellType == EGridCellType::PressurePlate) PlateGroups.Add(Cell.GroupId);
             }
         }
@@ -598,8 +582,7 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
             if (GridManagerRef->HasCell(Pos))
             {
                 FGridCell Cell = GridManagerRef->GetCell(Pos);
-                if (Cell.GroupId == GroupId &&
-                    (Cell.CellType == EGridCellType::Door || Cell.CellType == EGridCellType::PressurePlate))
+                if (Cell.GroupId == GroupId)
                 {
                     ToRemove.Add(Pos);
                 }
@@ -688,6 +671,49 @@ int32 ALevelEditorGameMode::CountPlatesForGroup(int32 GroupId) const
         }
     }
     return Count;
+}
+
+void ALevelEditorGameMode::ApplyPostPaintFlow(FIntPoint Pos)
+{
+    if (!GridManagerRef) return;
+
+    ATileVisualActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
+    if (!Visual) return;
+
+    TArray<UGridMechanismComponent*> Mechs;
+    Visual->GetComponents<UGridMechanismComponent>(Mechs);
+
+    for (UGridMechanismComponent* M : Mechs)
+    {
+        EEditorPlacementFlow Flow = M->GetEditorPlacementFlow();
+        if (Flow == EEditorPlacementFlow::AssignGroup)
+        {
+            int32 NewGroupId = CreateNewGroup();
+            GridManagerRef->SetCellGroupId(Pos, NewGroupId);
+            CurrentGroupId = NewGroupId;
+            SetEditorMode(EEditorMode::PlacingPlatesForDoor);
+            UE_LOG(LogTemp, Log, TEXT("Editor: Placed group anchor for group %d. Click to place plates, Esc to finish."), NewGroupId);
+            break;
+        }
+    }
+}
+
+bool ALevelEditorGameMode::IsGroupAnchor(FIntPoint Pos) const
+{
+    if (!GridManagerRef) return false;
+
+    ATileVisualActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
+    if (!Visual) return false;
+
+    TArray<UGridMechanismComponent*> Mechs;
+    Visual->GetComponents<UGridMechanismComponent>(Mechs);
+
+    for (const UGridMechanismComponent* M : Mechs)
+    {
+        if (M->GetEditorPlacementFlow() == EEditorPlacementFlow::AssignGroup)
+            return true;
+    }
+    return false;
 }
 
 FLinearColor ALevelEditorGameMode::GetDefaultGroupColor(int32 GroupId) const

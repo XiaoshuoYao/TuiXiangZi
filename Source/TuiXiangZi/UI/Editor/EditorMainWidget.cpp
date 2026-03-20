@@ -124,7 +124,7 @@ void UEditorMainWidget::HandleModeChanged(EEditorMode NewMode)
 	{
 		if (Sidebar)
 		{
-			Sidebar->SetEnabled(false);
+			Sidebar->EnterPlateMode();
 		}
 		if (GroupManager)
 		{
@@ -135,7 +135,7 @@ void UEditorMainWidget::HandleModeChanged(EEditorMode NewMode)
 	{
 		if (Sidebar)
 		{
-			Sidebar->SetEnabled(true);
+			Sidebar->ExitPlateMode();
 		}
 		if (GroupManager)
 		{
