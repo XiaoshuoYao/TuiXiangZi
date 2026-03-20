@@ -75,7 +75,25 @@ bool USokobanGameInstance::IsPresetLevelCompleted(const FString& LevelFileName) 
 
 FString USokobanGameInstance::GetPresetLevelDirectory()
 {
-    return FPaths::ProjectContentDir() / TEXT("Levels") / TEXT("Presets");
+    // Primary: Content/Levels/Presets (works in both editor and packaged builds
+    // when DirectoriesToAlwaysStageAsNonUFS includes Content/Levels/Presets)
+    FString ContentPath = FPaths::ProjectContentDir() / TEXT("Levels") / TEXT("Presets");
+
+    if (!FPaths::DirectoryExists(ContentPath))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Preset level directory not found at: %s"), *ContentPath);
+
+        // Fallback: check relative to ProjectDir
+        FString AltPath = FPaths::ProjectDir() / TEXT("Content") / TEXT("Levels") / TEXT("Presets");
+        if (FPaths::DirectoryExists(AltPath))
+        {
+            UE_LOG(LogTemp, Log, TEXT("Found preset levels at fallback path: %s"), *AltPath);
+            return AltPath;
+        }
+        UE_LOG(LogTemp, Warning, TEXT("Preset level fallback also not found at: %s"), *AltPath);
+    }
+
+    return ContentPath;
 }
 
 TArray<FString> USokobanGameInstance::GetPresetLevelPaths() const

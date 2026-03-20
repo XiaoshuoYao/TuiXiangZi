@@ -17,6 +17,10 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "UE5MCP",
+			"Enabled": false
 		}
 	]
 }
