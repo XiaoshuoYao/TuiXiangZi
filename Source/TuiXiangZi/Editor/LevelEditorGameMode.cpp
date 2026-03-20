@@ -69,6 +69,15 @@ void ALevelEditorGameMode::BeginPlay()
         NewLevel(8, 6);
     }
 
+    // Ensure GridManager has a TileStyleCatalog (for packaged builds where the
+    // dynamically spawned GridManager won't have it set via EditAnywhere).
+    // LoadObject resolves from cooked content; assigned to GridManager's UPROPERTY to prevent GC.
+    if (GridManagerRef && !GridManagerRef->TileStyleCatalog)
+    {
+        GridManagerRef->TileStyleCatalog = LoadObject<UTileStyleCatalog>(
+            nullptr, TEXT("/Game/Misc/DA_DefaultTileStyles.DA_DefaultTileStyles"));
+    }
+
     FocusEditorCamera();
 }
 

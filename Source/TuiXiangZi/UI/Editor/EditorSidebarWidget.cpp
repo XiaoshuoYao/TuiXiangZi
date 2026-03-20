@@ -12,7 +12,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/Spacer.h"
-#include "Engine/TextureRenderTarget2D.h"
+#include "Engine/Texture2D.h"
 
 // ============================================================
 // Brush configuration table
@@ -252,13 +252,13 @@ void UEditorSidebarWidget::InitializeWithCatalog(UTileStyleCatalog* Catalog)
 {
 	TileStyleCatalog = Catalog;
 
-#if WITH_EDITOR
-	// Transient 缩略图在 PIE 启动时为空，需按需生成
-	if (TileStyleCatalog)
+	// Fallback: in packaged builds the widget may construct before GameMode::BeginPlay
+	// has initialized GridManagerRef, so the catalog can be null at this point.
+	if (!TileStyleCatalog)
 	{
-		TileStyleCatalog->EnsureThumbnailsGenerated();
+		TileStyleCatalog = LoadObject<UTileStyleCatalog>(
+			nullptr, TEXT("/Game/Misc/DA_DefaultTileStyles.DA_DefaultTileStyles"));
 	}
-#endif
 
 	RefreshVariantPanel(CurrentBrush);
 }

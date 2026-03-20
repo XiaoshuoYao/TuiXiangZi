@@ -5,7 +5,6 @@
 #include "Grid/GridTypes.h"
 #include "TileStyleCatalog.generated.h"
 
-class UTextureRenderTarget2D;
 class ATileVisualActor;
 
 USTRUCT(BlueprintType)
@@ -22,13 +21,13 @@ struct FTileVisualStyle
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TileStyle")
     EGridCellType ApplicableType = EGridCellType::Floor;
 
-    /** 该变体对应的蓝图 Actor 类（Tile/Box 均为 ATileVisualActor 子类，行为靠 Component 区分） */
+    /** 该变体对应的蓝图 Actor 类 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TileStyle")
     TSubclassOf<AActor> ActorClass;
 
-    /** 自动从蓝图的 MeshComp 渲染生成，无需手动设置 */
-    UPROPERTY(Transient, VisibleAnywhere, Category = "TileStyle")
-    UTextureRenderTarget2D* Thumbnail = nullptr;
+    /** 缩略图（点击 GenerateAllThumbnails 按钮自动生成，随 DataAsset 保存） */
+    UPROPERTY(VisibleAnywhere, Category = "TileStyle")
+    UTexture2D* Thumbnail = nullptr;
 };
 
 UCLASS(BlueprintType)
@@ -55,15 +54,8 @@ public:
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
-    /** 为所有 Style 条目重新渲染缩略图 */
-    void RegenerateAllThumbnails();
-
-    /** 确保缩略图已生成（PIE 运行时按需调用） */
-    void EnsureThumbnailsGenerated();
-
-private:
-    /** 在预览世界中生成蓝图实例并渲染缩略图 */
-    static void RenderActorClassToTarget(UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
-        TSubclassOf<AActor> ActorClass);
+    /** 编辑器按钮：为所有 Style 生成缩略图 */
+    UFUNCTION(CallInEditor, Category = "TileStyle|Thumbnail")
+    void GenerateAllThumbnails();
 #endif
 };

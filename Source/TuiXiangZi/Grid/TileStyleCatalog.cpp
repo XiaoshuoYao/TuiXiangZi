@@ -1,6 +1,5 @@
 #include "Grid/TileStyleCatalog.h"
 #include "Grid/TileVisualActor.h"
-#include "Engine/TextureRenderTarget2D.h"
 
 #if WITH_EDITOR
 #include "Components/SceneCaptureComponent2D.h"
@@ -8,7 +7,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "RenderingThread.h"
+#include "Editor.h"
 #endif
 
 const FTileVisualStyle* UTileStyleCatalog::FindStyle(FName StyleId) const
@@ -60,165 +61,135 @@ void UTileStyleCatalog::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
             SeenIds.Add(Style.StyleId);
         }
     }
-
-    // VisualActorClass 变化时自动重新渲染缩略图
-    RegenerateAllThumbnails();
 }
 
-void UTileStyleCatalog::EnsureThumbnailsGenerated()
+void UTileStyleCatalog::GenerateAllThumbnails()
 {
-    // 检查是否有缩略图缺失（Transient 属性在 PIE 启动后为 nullptr）
-    bool bAnyMissing = false;
-    for (const FTileVisualStyle& Style : Styles)
+    // 获取编辑器世界
+    UWorld* EditorWorld = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+    if (!EditorWorld)
     {
-        if (Style.ActorClass && !Style.Thumbnail)
-        {
-            bAnyMissing = true;
-            break;
-        }
-    }
-    if (bAnyMissing)
-    {
-        RegenerateAllThumbnails();
-    }
-}
-
-void UTileStyleCatalog::RegenerateAllThumbnails()
-{
-    // 1. 检查是否有需要渲染的条目
-    bool bAnyNeedRender = false;
-    for (const FTileVisualStyle& Style : Styles)
-    {
-        if (Style.ActorClass) { bAnyNeedRender = true; break; }
-    }
-
-    if (!bAnyNeedRender)
-    {
-        // 全部清空，旧 RT 由 GC 回收（Outer 是 GetTransientPackage）
-        for (FTileVisualStyle& Style : Styles)
-            Style.Thumbnail = nullptr;
+        UE_LOG(LogTemp, Error, TEXT("TileStyleCatalog: No editor world available!"));
         return;
     }
 
-    // 2. 创建共享预览世界（所有条目复用同一个）
-    UWorld* PreviewWorld = UWorld::CreateWorld(EWorldType::EditorPreview, false, TEXT("TileThumbWorld"));
-    if (!PreviewWorld) return;
+    // 远离场景原点的临时位置
+    const FVector ThumbOrigin(50000.0f, 50000.0f, 50000.0f);
 
-    FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::EditorPreview);
-    WorldContext.SetCurrentWorld(PreviewWorld);
-
-    // 确保场景完全初始化
-    PreviewWorld->InitializeActorsForPlay(FURL());
-
-    // 3. 添加灯光（Key Light + Fill Light + Sky Light）
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    AActor* LightActor = PreviewWorld->SpawnActor<AActor>(AActor::StaticClass(), FTransform::Identity, SpawnParams);
+    // 创建临时灯光
+    AActor* LightActor = EditorWorld->SpawnActor<AActor>(
+        AActor::StaticClass(), FTransform(ThumbOrigin), SpawnParams);
+    if (!LightActor)
     {
-        // 主光：从左上方 45° 打下来
-        UDirectionalLightComponent* KeyLight = NewObject<UDirectionalLightComponent>(LightActor);
-        KeyLight->SetWorldRotation(FRotator(-45.0f, -45.0f, 0.0f));
-        KeyLight->Intensity = 4.0f;
-        KeyLight->RegisterComponent();
-
-        // 补光：从右下方打，强度较低
-        UDirectionalLightComponent* FillLight = NewObject<UDirectionalLightComponent>(LightActor);
-        FillLight->SetWorldRotation(FRotator(-30.0f, 135.0f, 0.0f));
-        FillLight->Intensity = 1.5f;
-        FillLight->RegisterComponent();
+        UE_LOG(LogTemp, Error, TEXT("TileStyleCatalog: Failed to spawn light actor!"));
+        return;
     }
 
-    // 4. 逐条目渲染
+    UDirectionalLightComponent* KeyLight = NewObject<UDirectionalLightComponent>(LightActor);
+    KeyLight->SetWorldRotation(FRotator(-45.0f, -45.0f, 0.0f));
+    KeyLight->Intensity = 3.0f;
+    KeyLight->RegisterComponent();
+
+    UDirectionalLightComponent* FillLight = NewObject<UDirectionalLightComponent>(LightActor);
+    FillLight->SetWorldRotation(FRotator(-30.0f, 135.0f, 0.0f));
+    FillLight->Intensity = 1.5f;
+    FillLight->RegisterComponent();
+
+    EditorWorld->SendAllEndOfFrameUpdates();
+    FlushRenderingCommands();
+
+    // 创建临时 RenderTarget
+    UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>(GetTransientPackage());
+    RT->InitAutoFormat(ThumbnailResolution, ThumbnailResolution);
+    RT->ClearColor = FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
+    RT->UpdateResourceImmediate(true);
+
+    int32 SuccessCount = 0;
+
     for (FTileVisualStyle& Style : Styles)
     {
-        TSubclassOf<AActor> ClassToRender = Style.ActorClass;
-        if (!ClassToRender)
+        if (!Style.ActorClass)
         {
             Style.Thumbnail = nullptr;
             continue;
         }
 
-        // 复用已有 RT，避免反复分配
-        if (!Style.Thumbnail || !IsValid(Style.Thumbnail)
-            || Style.Thumbnail->SizeX != ThumbnailResolution)
+        // 在编辑器世界中生成蓝图 Actor（蓝图构造链完整执行）
+        AActor* PreviewActor = EditorWorld->SpawnActor<AActor>(
+            Style.ActorClass, FTransform(ThumbOrigin), SpawnParams);
+        if (!PreviewActor)
         {
-            Style.Thumbnail = NewObject<UTextureRenderTarget2D>(GetTransientPackage());
-            Style.Thumbnail->InitAutoFormat(ThumbnailResolution, ThumbnailResolution);
-            Style.Thumbnail->ClearColor = FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
-            Style.Thumbnail->UpdateResourceImmediate(true);
+            UE_LOG(LogTemp, Warning, TEXT("  [%s] Failed to spawn actor"), *Style.StyleId.ToString());
+            continue;
         }
 
-        RenderActorClassToTarget(PreviewWorld, Style.Thumbnail, ClassToRender);
-    }
+        UStaticMeshComponent* MeshComp = PreviewActor->FindComponentByClass<UStaticMeshComponent>();
+        if (!MeshComp || !MeshComp->GetStaticMesh())
+        {
+            UE_LOG(LogTemp, Warning, TEXT("  [%s] No StaticMesh found"), *Style.StyleId.ToString());
+            PreviewActor->Destroy();
+            continue;
+        }
 
-    // 5. 清理：一次性销毁共享世界
-    LightActor->Destroy();
-    GEngine->DestroyWorldContext(PreviewWorld);
-    PreviewWorld->DestroyWorld(false);
-}
+        // 等待场景代理创建
+        EditorWorld->SendAllEndOfFrameUpdates();
+        FlushRenderingCommands();
 
-void UTileStyleCatalog::RenderActorClassToTarget(
-    UWorld* PreviewWorld, UTextureRenderTarget2D* RT,
-    TSubclassOf<AActor> ActorClass)
-{
-    if (!PreviewWorld || !RT || !ActorClass) return;
+        // 计算相机位置
+        FBoxSphereBounds Bounds = MeshComp->Bounds;
+        float Radius = FMath::Max(Bounds.SphereRadius, 1.0f);
+        FVector CamPos = Bounds.Origin + FVector(-Radius * 2.5f, Radius * 1.5f, Radius * 2.0f);
+        FRotator CamRot = (Bounds.Origin - CamPos).Rotation();
 
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        // 创建 SceneCapture
+        USceneCaptureComponent2D* Capture = NewObject<USceneCaptureComponent2D>(PreviewActor);
+        Capture->TextureTarget = RT;
+        Capture->SetWorldLocationAndRotation(CamPos, CamRot);
+        Capture->FOVAngle = 30.0f;
+        Capture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
+        Capture->bCaptureEveryFrame = false;
+        Capture->bCaptureOnMovement = false;
+        Capture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
+        Capture->ShowOnlyActors.Add(PreviewActor);
+        Capture->RegisterComponent();
 
-    // 在预览世界中临时生成蓝图实例（支持 ATileVisualActor 及其子类）
-    AActor* PreviewActor = PreviewWorld->SpawnActor<AActor>(
-        ActorClass, FTransform::Identity, SpawnParams);
-    if (!PreviewActor) return;
+        EditorWorld->SendAllEndOfFrameUpdates();
+        FlushRenderingCommands();
 
-    // 从蓝图实例中找到第一个 StaticMeshComponent 来确定包围盒和渲染内容
-    UStaticMeshComponent* MeshComp = PreviewActor->FindComponentByClass<UStaticMeshComponent>();
-    if (!MeshComp || !MeshComp->GetStaticMesh())
-    {
+        // 清空 RT 并捕获
+        RT->UpdateResourceImmediate(true);
+        Capture->CaptureScene();
+        FlushRenderingCommands();
+
+        // 将 RenderTarget 转为持久化的 UTexture2D（保存在 DataAsset 的 Package 中）
+        FString TexName = FString::Printf(TEXT("Thumb_%s"), *Style.StyleId.ToString());
+        UTexture2D* NewTex = RT->ConstructTexture2D(this, TexName, RF_NoFlags);
+        if (NewTex)
+        {
+            NewTex->LODGroup = TEXTUREGROUP_UI;
+            NewTex->UpdateResource();
+            Style.Thumbnail = NewTex;
+            SuccessCount++;
+            UE_LOG(LogTemp, Log, TEXT("  [%s] OK"), *Style.StyleId.ToString());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("  [%s] ConstructTexture2D failed"), *Style.StyleId.ToString());
+        }
+
         PreviewActor->Destroy();
-        return;
     }
 
-    // 确保组件已注册并更新包围盒
-    if (!MeshComp->IsRegistered())
-    {
-        MeshComp->RegisterComponent();
-    }
+    // 清理
+    LightActor->Destroy();
 
-    // 确保场景中所有 Primitive 已注册
-    PreviewWorld->SendAllEndOfFrameUpdates();
+    // 标记 DataAsset 为已修改，提示用户保存
+    MarkPackageDirty();
 
-    // 使用组件的世界空间包围盒（包含蓝图中设置的 Transform）
-    FBoxSphereBounds Bounds = MeshComp->Bounds;
-    float Radius = FMath::Max(Bounds.SphereRadius, 1.0f);
-
-    FVector CamPos = Bounds.Origin + FVector(-Radius * 2.5f, Radius * 1.5f, Radius * 2.0f);
-    FRotator CamRot = (Bounds.Origin - CamPos).Rotation();
-
-    // SceneCapture 组件
-    USceneCaptureComponent2D* Capture = NewObject<USceneCaptureComponent2D>(PreviewActor);
-    Capture->RegisterComponent();
-    Capture->TextureTarget = RT;
-    Capture->SetWorldLocationAndRotation(CamPos, CamRot);
-    Capture->FOVAngle = 30.0f;
-    // SceneColorHDR 跳过 Tonemapping，EditorPreview 世界没有完整后处理管线，
-    // 用 FinalColorLDR 会导致全黑
-    Capture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
-    Capture->bCaptureEveryFrame = false;
-    Capture->bCaptureOnMovement = false;
-
-    // 只渲染目标 Actor 的组件，避免捕获到其他内容
-    Capture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
-    Capture->ShowOnlyActors.Add(PreviewActor);
-
-    // 执行一次捕获
-    Capture->CaptureScene();
-
-    // 等待 GPU 渲染完成，确保 RT 内容已写入
-    FlushRenderingCommands();
-
-    // 销毁临时 Actor（灯光留在世界里，被所有条目共享）
-    PreviewActor->Destroy();
+    UE_LOG(LogTemp, Log, TEXT("TileStyleCatalog: Generated %d/%d thumbnails. Save the asset to persist."),
+        SuccessCount, Styles.Num());
 }
 #endif
