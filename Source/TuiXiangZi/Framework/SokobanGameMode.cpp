@@ -11,6 +11,8 @@
 #include "Tutorial/TutorialSubsystem.h"
 #include "Tutorial/TutorialDataAsset.h"
 #include "UI/TutorialWidget.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/Paths.h"
@@ -48,9 +50,15 @@ void ASokobanGameMode::BeginPlay()
 
     GridManagerRef = FindOrSpawnGridManager();
 
-    if (GridManagerRef)
+    if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
     {
-        GridManagerRef->OnPlayerEnteredGoal.AddUObject(this, &ASokobanGameMode::OnPlayerEnteredGoal);
+        EventBus->Subscribe(GameEventTags::PlayerEnteredGoal, FOnGameEvent::FDelegate::CreateUObject(this, &ASokobanGameMode::OnPlayerEnteredGoalEvent));
+
+        // BlueprintAssignable wrapper: forward EventBus events to dynamic delegates for Blueprint UI
+        EventBus->Subscribe(GameEventTags::StepCountChanged, FOnGameEvent::FDelegate::CreateLambda(
+            [this](FName, const FGameEventPayload& P) { OnStepCountChanged.Broadcast(P.IntParam); }));
+        EventBus->Subscribe(GameEventTags::LevelCompleted, FOnGameEvent::FDelegate::CreateLambda(
+            [this](FName, const FGameEventPayload& P) { OnLevelCompleted.Broadcast(P.IntParam); }));
     }
 
     // Ensure input mode is set to Game (in case we came from UI-only menu)
@@ -232,9 +240,12 @@ void ASokobanGameMode::ResetCurrentLevel()
 {
     if (!CurrentLevelPath.IsEmpty())
     {
+        if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
+        {
+            EventBus->Broadcast(GameEventTags::Reset);
+        }
         if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
         {
-            TutSub->NotifyCondition(ETutorialConditionType::OnReset);
             TutSub->DismissTutorial();
         }
         ExecuteLoadLevel(CurrentLevelPath);
@@ -249,15 +260,15 @@ void ASokobanGameMode::UndoLastMove()
     FLevelSnapshot Snapshot = GS->PopSnapshot();
     GS->RestoreSnapshot(Snapshot, GridManagerRef);
     UpdateBoxOnPlateVisuals();
-    OnStepCountChanged.Broadcast(GS->StepCount);
 
-    if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+    if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
     {
-        TutSub->NotifyCondition(ETutorialConditionType::OnUndo);
+        EventBus->Broadcast(GameEventTags::StepCountChanged, FGameEventPayload::MakeInt(GS->StepCount));
+        EventBus->Broadcast(GameEventTags::Undone);
     }
 }
 
-void ASokobanGameMode::OnPlayerEnteredGoal(FIntPoint GoalPos)
+void ASokobanGameMode::OnPlayerEnteredGoalEvent(FName EventTag, const FGameEventPayload& Payload)
 {
     ASokobanGameState* GS = GetGameState<ASokobanGameState>();
     if (GS && !GS->bLevelCompleted)
@@ -274,7 +285,10 @@ void ASokobanGameMode::OnPlayerEnteredGoal(FIntPoint GoalPos)
             GI->MarkPresetLevelCompleted(FileName);
         }
 
-        OnLevelCompleted.Broadcast(Steps);
+        if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
+        {
+            EventBus->Broadcast(GameEventTags::LevelCompleted, FGameEventPayload::MakeInt(Steps));
+        }
 
         UE_LOG(LogTemp, Warning, TEXT("SokobanGameMode: bFromEditor = %s"), bFromEditor ? TEXT("true") : TEXT("false"));
 

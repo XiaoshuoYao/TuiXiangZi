@@ -3,10 +3,12 @@
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Tutorial/TutorialTypes.h"
+#include "Events/GameEventPayload.h"
 #include "TutorialSubsystem.generated.h"
 
 class UTutorialDataAsset;
 class UTutorialWidget;
+class UGameEventBus;
 
 UCLASS()
 class TUIXIANGZI_API UTutorialSubsystem : public UWorldSubsystem
@@ -14,6 +16,8 @@ class TUIXIANGZI_API UTutorialSubsystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+
 	// Initialize configuration (called by GameMode in BeginPlay)
 	void SetTutorialConfig(UTutorialDataAsset* Data, TSubclassOf<UTutorialWidget> WidgetClass);
 
@@ -22,14 +26,6 @@ public:
 
 	// Start tutorial for the level editor
 	void StartEditorTutorial();
-
-	// Unified notification: a condition was met (action-based: OnPlayerMove, OnPushBox, etc.)
-	void NotifyCondition(ETutorialConditionType Type);
-
-	// Parameterized notifications
-	void NotifyGameplayEvent(FName EventTag);
-	void NotifyStepCountChanged(int32 NewCount);
-	void NotifyPlayerMoved(FIntPoint NewGridPos);
 
 	// Manual advance (widget Next button callback)
 	UFUNCTION()
@@ -68,6 +64,9 @@ private:
 	void TryMatchCompletion(const FTutorialCondition& Condition, ETutorialConditionType InType, int32 StepCount, FIntPoint PlayerPos, FName EventTag);
 
 	void SetUIInputMode(bool bUIMode);
+
+	// EventBus handler for all subscribed events
+	void OnGameEvent(FName EventTag, const FGameEventPayload& Payload);
 
 	// When true, skip input mode changes (editor already manages its own cursor/input)
 	bool bIsEditorTutorial = false;

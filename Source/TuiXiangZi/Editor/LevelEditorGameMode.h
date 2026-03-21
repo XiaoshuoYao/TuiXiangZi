@@ -18,6 +18,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBrushChanged, EEditorBrush, NewBr
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEditorModeChanged, EEditorMode, NewMode);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGroupCreated, int32, GroupId);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGroupDeleted, int32, GroupId);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEditorError, const FText&, Message);
 
 USTRUCT(BlueprintType)
 struct FLevelValidationResult
@@ -154,6 +155,9 @@ public:
 
     UPROPERTY(BlueprintAssignable, Category = "Editor")
     FOnGroupDeleted OnGroupDeleted;
+
+    UPROPERTY(BlueprintAssignable, Category = "Editor")
+    FOnEditorError OnEditorError;
 
     // ===== State =====
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Editor")

@@ -1,4 +1,6 @@
 #include "Grid/GridManager.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 #include "Grid/TileStyleCatalog.h"
 #include "Grid/TileVisualActor.h"
 #include "LevelData/LevelDataTypes.h"
@@ -183,6 +185,8 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
     FGridCell* FromCell = GridCells.Find(FromGrid);
     if (!FromCell || !FromCell->OccupyingActor.IsValid()) return false;
 
+    UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>();
+
     AActor* MovingActor = FromCell->OccupyingActor.Get();
     const FIntPoint Offset = DirectionToOffset(Direction);
     const FIntPoint TargetPos = FromGrid + Offset;
@@ -211,10 +215,10 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
         {
             TargetCell->OccupyingActor = nullptr;
             HandleBoxFallIntoPit(BoxActor, BoxTargetPos);
-            OnActorLogicalMoved.Broadcast(BoxActor, TargetPos, BoxTargetPos);
+            EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(BoxActor, TargetPos, BoxTargetPos));
 
             UpdateOccupancy(FromGrid, TargetPos, MovingActor);
-            OnActorLogicalMoved.Broadcast(MovingActor, FromGrid, TargetPos);
+            EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(MovingActor, FromGrid, TargetPos));
 
             if (GetModifierAt(TargetPos) && GetModifierAt(TargetPos)->ShouldContinueMovement(Direction))
             {
@@ -222,7 +226,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
                 if (SlideDest != TargetPos)
                 {
                     UpdateOccupancy(TargetPos, SlideDest, MovingActor);
-                    OnActorLogicalMoved.Broadcast(MovingActor, TargetPos, SlideDest);
+                    EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(MovingActor, TargetPos, SlideDest));
                 }
             }
         }
@@ -237,21 +241,21 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
                 if (BoxFinalDest != BoxTargetPos)
                 {
                     UpdateOccupancy(BoxTargetPos, BoxFinalDest, BoxActor);
-                    OnActorLogicalMoved.Broadcast(BoxActor, TargetPos, BoxFinalDest);
+                    EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(BoxActor, TargetPos, BoxFinalDest));
                 }
                 else
                 {
-                    OnActorLogicalMoved.Broadcast(BoxActor, TargetPos, BoxTargetPos);
+                    EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(BoxActor, TargetPos, BoxTargetPos));
                 }
             }
             else
             {
                 UpdateOccupancy(TargetPos, BoxTargetPos, BoxActor);
-                OnActorLogicalMoved.Broadcast(BoxActor, TargetPos, BoxTargetPos);
+                EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(BoxActor, TargetPos, BoxTargetPos));
             }
 
             UpdateOccupancy(FromGrid, TargetPos, MovingActor);
-            OnActorLogicalMoved.Broadcast(MovingActor, FromGrid, TargetPos);
+            EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(MovingActor, FromGrid, TargetPos));
 
             FGridCell* PlayerNewCell = GridCells.Find(TargetPos);
             if (UTileModifierComponent* PlayerMod = GetModifierAt(TargetPos); PlayerMod && PlayerMod->ShouldContinueMovement(Direction))
@@ -260,7 +264,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
                 if (SlideDest != TargetPos)
                 {
                     UpdateOccupancy(TargetPos, SlideDest, MovingActor);
-                    OnActorLogicalMoved.Broadcast(MovingActor, TargetPos, SlideDest);
+                    EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(MovingActor, TargetPos, SlideDest));
                 }
             }
         }
@@ -273,7 +277,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
         if (!TargetCell) return false;
 
         UpdateOccupancy(FromGrid, TargetPos, MovingActor);
-        OnActorLogicalMoved.Broadcast(MovingActor, FromGrid, TargetPos);
+        EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(MovingActor, FromGrid, TargetPos));
 
         if (UTileModifierComponent* Mod = GetModifierAt(TargetPos); Mod && Mod->ShouldContinueMovement(Direction))
         {
@@ -281,7 +285,7 @@ bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
             if (SlideDest != TargetPos)
             {
                 UpdateOccupancy(TargetPos, SlideDest, MovingActor);
-                OnActorLogicalMoved.Broadcast(MovingActor, TargetPos, SlideDest);
+                EventBus->Broadcast(GameEventTags::ActorMoved, FGameEventPayload::MakeActorMoved(MovingActor, TargetPos, SlideDest));
             }
         }
     }
@@ -310,7 +314,7 @@ void AGridManager::HandleBoxFallIntoPit(AActor* BoxActor, FIntPoint PitPos)
     GridCells.Add(PitPos, NewFloorCell);
     SpawnOrUpdateVisualActor(PitPos, NewFloorCell);
 
-    OnPitFilled.Broadcast(PitPos, BoxActor);
+    GetWorld()->GetSubsystem<UGameEventBus>()->Broadcast(GameEventTags::PitFilled, FGameEventPayload::MakeActorAtPos(BoxActor, PitPos));
 
     if (UPushableBoxComponent* BoxComp = BoxActor->FindComponentByClass<UPushableBoxComponent>())
     {
@@ -361,7 +365,7 @@ void AGridManager::CheckGoalCondition()
 
         if (Cast<ASokobanCharacter>(Cell->OccupyingActor.Get()))
         {
-            OnPlayerEnteredGoal.Broadcast(GoalComp->GridPos);
+            GetWorld()->GetSubsystem<UGameEventBus>()->Broadcast(GameEventTags::PlayerEnteredGoal, FGameEventPayload::MakeGridPos(GoalComp->GridPos));
         }
     }
 }

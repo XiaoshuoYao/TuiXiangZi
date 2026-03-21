@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Events/GameEventPayload.h"
 #include "SokobanGameMode.generated.h"
 
 class AGridManager;
+class UGameEventBus;
 class UPauseMenuWidget;
 class UTutorialDataAsset;
 class UTutorialWidget;
@@ -54,7 +56,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Game|UI")
     bool IsPauseMenuVisible() const { return bPauseMenuVisible; }
 
-    void OnPlayerEnteredGoal(FIntPoint GoalPos);
+    void OnPlayerEnteredGoalEvent(FName EventTag, const FGameEventPayload& Payload);
 
     // ===== HUD Data Interface =====
     UFUNCTION(BlueprintCallable, Category = "Game|HUD")

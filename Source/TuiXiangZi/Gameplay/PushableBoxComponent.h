@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Events/GameEventPayload.h"
 #include "PushableBoxComponent.generated.h"
 
 class AGridManager;
+class UGameEventBus;
 class UTimelineComponent;
 class UCurveFloat;
 class UStaticMeshComponent;
@@ -59,5 +61,5 @@ protected:
 	UFUNCTION()
 	void OnMoveTimelineFinished();
 
-	void OnActorLogicalMoved(AActor* Actor, FIntPoint From, FIntPoint To);
+	void OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload);
 };

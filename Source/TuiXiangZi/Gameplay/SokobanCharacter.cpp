@@ -9,7 +9,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/CapsuleComponent.h"
-#include "Tutorial/TutorialSubsystem.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 
 ASokobanCharacter::ASokobanCharacter()
 {
@@ -58,8 +59,11 @@ void ASokobanCharacter::BeginPlay()
         float CellSize = GridManagerRef->CellSize;
         GetCharacterMovement()->MaxWalkSpeed = CellSize / FMath::Max(MoveDuration, 0.01f);
 
-        // 绑定 GridManager 广播
-        GridManagerRef->OnActorLogicalMoved.AddUObject(this, &ASokobanCharacter::OnActorLogicalMoved);
+        // Subscribe to ActorMoved via EventBus
+        if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
+        {
+            EventBus->Subscribe(GameEventTags::ActorMoved, FOnGameEvent::FDelegate::CreateUObject(this, &ASokobanCharacter::OnActorMovedEvent));
+        }
     }
 
     // 添加 Enhanced Input Mapping Context
@@ -149,9 +153,6 @@ void ASokobanCharacter::OnUndo(const FInputActionValue& Value)
         if (GM->IsPauseMenuVisible()) return;
         GM->RequestUndo();
         GM->UpdateBoxOnPlateVisuals();
-
-        ASokobanGameState* GS = GetWorld()->GetGameState<ASokobanGameState>();
-        GM->OnStepCountChanged.Broadcast(GS ? GS->GetStepCount() : 0);
     }
 }
 
@@ -195,19 +196,18 @@ void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
         {
             GS->IncrementSteps();
         }
-        // Update box-on-plate visuals and broadcast step count
+        // Update box-on-plate visuals
         if (ASokobanGameMode* GM = Cast<ASokobanGameMode>(GetWorld()->GetAuthGameMode()))
         {
             GM->UpdateBoxOnPlateVisuals();
-            GM->OnStepCountChanged.Broadcast(GS ? GS->GetStepCount() : 0);
         }
 
-        // Notify tutorial subsystem
-        if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+        // Broadcast events via EventBus
+        if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
         {
-            TutSub->NotifyCondition(ETutorialConditionType::OnPlayerMove);
-            TutSub->NotifyPlayerMoved(CurrentGridPos);
-            TutSub->NotifyStepCountChanged(GS ? GS->GetStepCount() : 0);
+            int32 Steps = GS ? GS->GetStepCount() : 0;
+            EventBus->Broadcast(GameEventTags::StepCountChanged, FGameEventPayload::MakeInt(Steps));
+            EventBus->Broadcast(GameEventTags::PlayerMoved, FGameEventPayload::MakeGridPos(CurrentGridPos));
         }
     }
     else
@@ -243,14 +243,14 @@ void ASokobanCharacter::SnapToGridPos(FIntPoint GridPos)
     }
 }
 
-void ASokobanCharacter::OnActorLogicalMoved(AActor* Actor, FIntPoint From, FIntPoint To)
+void ASokobanCharacter::OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload)
 {
-    if (Actor != this) return;
+    if (Payload.Actor.Get() != this) return;
 
-    CurrentGridPos = To;
+    CurrentGridPos = Payload.ToPos;
     if (GridManagerRef)
     {
-        MoveTargetLocation = GridManagerRef->GridToWorld(To);
+        MoveTargetLocation = GridManagerRef->GridToWorld(Payload.ToPos);
         MoveTargetLocation.Z = GetActorLocation().Z;
         MoveDirection = (MoveTargetLocation - GetActorLocation()).GetSafeNormal2D();
         bIsMoving = true;

@@ -2,6 +2,8 @@
 #include "Tutorial/TutorialDataAsset.h"
 #include "UI/TutorialWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 
 // ---- Helper: does a condition match given the incoming notification? ----
 static bool DoesConditionMatch(const FTutorialCondition& Cond, ETutorialConditionType InType,
@@ -23,7 +25,98 @@ static bool DoesConditionMatch(const FTutorialCondition& Cond, ETutorialConditio
 	}
 }
 
+// ---- Map EventBus tag to ETutorialConditionType ----
+static ETutorialConditionType EventTagToConditionType(FName Tag)
+{
+	if (Tag == GameEventTags::PlayerMoved)    return ETutorialConditionType::OnPlayerMove;
+	if (Tag == GameEventTags::PushedBox)      return ETutorialConditionType::OnPushBox;
+	if (Tag == GameEventTags::Undone)         return ETutorialConditionType::OnUndo;
+	if (Tag == GameEventTags::Reset)          return ETutorialConditionType::OnReset;
+	if (Tag == GameEventTags::DoorOpened)     return ETutorialConditionType::OnDoorOpened;
+	if (Tag == GameEventTags::StepCountChanged) return ETutorialConditionType::AfterSteps;
+	// Editor.* and other tags → OnGameplayEvent
+	return ETutorialConditionType::OnGameplayEvent;
+}
+
 // =========================================================================
+
+void UTutorialSubsystem::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+
+	UGameEventBus* EventBus = InWorld.GetSubsystem<UGameEventBus>();
+	if (!EventBus) return;
+
+	auto Sub = [&](FName Tag)
+	{
+		EventBus->Subscribe(Tag, FOnGameEvent::FDelegate::CreateUObject(this, &UTutorialSubsystem::OnGameEvent));
+	};
+
+	// Gameplay events
+	Sub(GameEventTags::PlayerMoved);
+	Sub(GameEventTags::PushedBox);
+	Sub(GameEventTags::Undone);
+	Sub(GameEventTags::Reset);
+	Sub(GameEventTags::DoorOpened);
+	Sub(GameEventTags::StepCountChanged);
+
+	// Editor events
+	Sub(GameEventTags::EditorBrushChanged);
+	Sub(GameEventTags::EditorCellPainted);
+	Sub(GameEventTags::EditorCellErased);
+	Sub(GameEventTags::EditorGroupCreated);
+	Sub(GameEventTags::EditorModeChanged);
+	Sub(GameEventTags::EditorNewLevel);
+	Sub(GameEventTags::EditorLevelSaved);
+	Sub(GameEventTags::EditorLevelLoaded);
+	Sub(GameEventTags::EditorLevelTested);
+}
+
+void UTutorialSubsystem::OnGameEvent(FName EventTag, const FGameEventPayload& Payload)
+{
+	// Update cached state from payload
+	if (EventTag == GameEventTags::StepCountChanged)
+	{
+		CachedStepCount = Payload.IntParam;
+	}
+	else if (EventTag == GameEventTags::PlayerMoved)
+	{
+		CachedPlayerPos = Payload.GridPos;
+	}
+
+	if (!IsTutorialActive() || bPaused) return;
+
+	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
+	ETutorialConditionType CondType = EventTagToConditionType(EventTag);
+
+	// For Player.Moved, also try OnGridPosition match
+	if (EventTag == GameEventTags::PlayerMoved)
+	{
+		if (bWaitingForTrigger)
+		{
+			TryMatchTrigger(Step.Trigger, ETutorialConditionType::OnPlayerMove, CachedStepCount, CachedPlayerPos, NAME_None);
+			TryMatchTrigger(Step.Trigger, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
+		}
+		else
+		{
+			TryMatchCompletion(Step.Completion, ETutorialConditionType::OnPlayerMove, CachedStepCount, CachedPlayerPos, NAME_None);
+			TryMatchCompletion(Step.Completion, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
+		}
+		return;
+	}
+
+	// Determine EventTag parameter for OnGameplayEvent conditions
+	FName CondEventTag = (CondType == ETutorialConditionType::OnGameplayEvent) ? EventTag : NAME_None;
+
+	if (bWaitingForTrigger)
+	{
+		TryMatchTrigger(Step.Trigger, CondType, CachedStepCount, CachedPlayerPos, CondEventTag);
+	}
+	else
+	{
+		TryMatchCompletion(Step.Completion, CondType, CachedStepCount, CachedPlayerPos, CondEventTag);
+	}
+}
 
 void UTutorialSubsystem::SetTutorialConfig(UTutorialDataAsset* Data, TSubclassOf<UTutorialWidget> WidgetClass)
 {
@@ -86,76 +179,6 @@ void UTutorialSubsystem::StartEditorTutorial()
 	else
 	{
 		bWaitingForTrigger = true;
-	}
-}
-
-// ---- Unified action notification ----
-void UTutorialSubsystem::NotifyCondition(ETutorialConditionType Type)
-{
-	if (!IsTutorialActive() || bPaused) return;
-
-	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
-
-	if (bWaitingForTrigger)
-	{
-		TryMatchTrigger(Step.Trigger, Type, CachedStepCount, CachedPlayerPos, NAME_None);
-	}
-	else
-	{
-		TryMatchCompletion(Step.Completion, Type, CachedStepCount, CachedPlayerPos, NAME_None);
-	}
-}
-
-// ---- Parameterized notifications ----
-void UTutorialSubsystem::NotifyGameplayEvent(FName EventTag)
-{
-	if (!IsTutorialActive() || bPaused) return;
-
-	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
-
-	if (bWaitingForTrigger)
-	{
-		TryMatchTrigger(Step.Trigger, ETutorialConditionType::OnGameplayEvent, CachedStepCount, CachedPlayerPos, EventTag);
-	}
-	else
-	{
-		TryMatchCompletion(Step.Completion, ETutorialConditionType::OnGameplayEvent, CachedStepCount, CachedPlayerPos, EventTag);
-	}
-}
-
-void UTutorialSubsystem::NotifyStepCountChanged(int32 NewCount)
-{
-	CachedStepCount = NewCount;
-
-	if (!IsTutorialActive() || bPaused) return;
-
-	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
-
-	if (bWaitingForTrigger)
-	{
-		TryMatchTrigger(Step.Trigger, ETutorialConditionType::AfterSteps, CachedStepCount, CachedPlayerPos, NAME_None);
-	}
-	else
-	{
-		TryMatchCompletion(Step.Completion, ETutorialConditionType::AfterSteps, CachedStepCount, CachedPlayerPos, NAME_None);
-	}
-}
-
-void UTutorialSubsystem::NotifyPlayerMoved(FIntPoint NewGridPos)
-{
-	CachedPlayerPos = NewGridPos;
-
-	if (!IsTutorialActive() || bPaused) return;
-
-	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
-
-	if (bWaitingForTrigger)
-	{
-		TryMatchTrigger(Step.Trigger, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
-	}
-	else
-	{
-		TryMatchCompletion(Step.Completion, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
 	}
 }
 

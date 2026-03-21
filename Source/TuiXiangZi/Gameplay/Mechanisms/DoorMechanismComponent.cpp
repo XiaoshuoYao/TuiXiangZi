@@ -1,7 +1,8 @@
 #include "Gameplay/Mechanisms/DoorMechanismComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
-#include "Tutorial/TutorialSubsystem.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 
 void UDoorMechanismComponent::BeginPlay()
 {
@@ -41,15 +42,12 @@ void UDoorMechanismComponent::SetDoorOpen(bool bOpen)
 
 	bIsOpen = bOpen;
 
-	// Notify tutorial subsystem when door opens
+	// Broadcast DoorOpened event via EventBus
 	if (bOpen)
 	{
-		if (UWorld* World = GetWorld())
+		if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
 		{
-			if (UTutorialSubsystem* TutSub = World->GetSubsystem<UTutorialSubsystem>())
-			{
-				TutSub->NotifyCondition(ETutorialConditionType::OnDoorOpened);
-			}
+			EventBus->Broadcast(GameEventTags::DoorOpened);
 		}
 	}
 

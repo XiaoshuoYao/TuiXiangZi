@@ -6,7 +6,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
-#include "Tutorial/TutorialSubsystem.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 
 UStaticMeshComponent* UPushableBoxComponent::FindOwnerMeshComp() const
 {
@@ -57,18 +58,18 @@ void UPushableBoxComponent::BeginPlay()
 		}
 	}
 
-	// Bind movement delegate
-	if (GridManagerRef)
+	// Subscribe to ActorMoved via EventBus
+	if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
 	{
-		GridManagerRef->OnActorLogicalMoved.AddUObject(this, &UPushableBoxComponent::OnActorLogicalMoved);
+		EventBus->Subscribe(GameEventTags::ActorMoved, FOnGameEvent::FDelegate::CreateUObject(this, &UPushableBoxComponent::OnActorMovedEvent));
 	}
 }
 
 void UPushableBoxComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (GridManagerRef)
+	if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
 	{
-		GridManagerRef->OnActorLogicalMoved.RemoveAll(this);
+		EventBus->UnsubscribeAllForObject(this);
 	}
 	Super::EndPlay(EndPlayReason);
 }
@@ -123,22 +124,19 @@ void UPushableBoxComponent::OnMoveTimelineFinished()
 	}
 }
 
-void UPushableBoxComponent::OnActorLogicalMoved(AActor* Actor, FIntPoint From, FIntPoint To)
+void UPushableBoxComponent::OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload)
 {
-	if (Actor != GetOwner()) return;
-	CurrentGridPos = To;
+	if (Payload.Actor.Get() != GetOwner()) return;
+	CurrentGridPos = Payload.ToPos;
 	if (GridManagerRef)
 	{
-		SmoothMoveTo(GridManagerRef->GridToWorld(To));
+		SmoothMoveTo(GridManagerRef->GridToWorld(Payload.ToPos));
 	}
 
-	// Notify tutorial subsystem that a box was pushed
-	if (UWorld* World = GetWorld())
+	// Broadcast PushedBox event via EventBus
+	if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
 	{
-		if (UTutorialSubsystem* TutSub = World->GetSubsystem<UTutorialSubsystem>())
-		{
-			TutSub->NotifyCondition(ETutorialConditionType::OnPushBox);
-		}
+		EventBus->Broadcast(GameEventTags::PushedBox);
 	}
 }
 

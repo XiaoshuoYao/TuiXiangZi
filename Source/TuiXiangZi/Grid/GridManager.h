@@ -18,10 +18,6 @@ struct FBoxData;
 class ASokobanCharacter;
 class UPushableBoxComponent;
 
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnActorLogicalMoved, AActor*, FIntPoint, FIntPoint);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerEnteredGoal, FIntPoint);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPitFilled, FIntPoint, AActor*);
-
 UCLASS(BlueprintType)
 class TUIXIANGZI_API AGridManager : public AActor
 {
@@ -89,11 +85,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Grid|Level")
     void ClearGrid();
-
-    // ===== Event Delegates =====
-    FOnActorLogicalMoved OnActorLogicalMoved;
-    FOnPlayerEnteredGoal OnPlayerEnteredGoal;
-    FOnPitFilled OnPitFilled;
 
     // ===== Movement =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Gameplay")

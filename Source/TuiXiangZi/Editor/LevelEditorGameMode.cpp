@@ -11,6 +11,8 @@
 #include "Tutorial/TutorialSubsystem.h"
 #include "Tutorial/TutorialDataAsset.h"
 #include "UI/TutorialWidget.h"
+#include "Events/GameEventBus.h"
+#include "Events/GameEventTags.h"
 #include "Framework/SokobanGameInstance.h"
 #include "Framework/SokobanSaveGame.h"
 #include "Kismet/GameplayStatics.h"
@@ -104,9 +106,9 @@ void ALevelEditorGameMode::BeginPlay()
 
 void ALevelEditorGameMode::NotifyEditorTutorialEvent(FName EventTag)
 {
-    if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+    if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
     {
-        TutSub->NotifyGameplayEvent(EventTag);
+        EventBus->Broadcast(EventTag);
     }
 }
 
@@ -118,7 +120,7 @@ void ALevelEditorGameMode::SetCurrentBrush(EEditorBrush NewBrush)
         // Clear style selection when switching brush type to avoid cross-type mismatch
         CurrentVisualStyleId = NAME_None;
         OnBrushChanged.Broadcast(NewBrush);
-        NotifyEditorTutorialEvent(FName(TEXT("BrushChanged")));
+        NotifyEditorTutorialEvent(GameEventTags::EditorBrushChanged);
     }
 }
 
@@ -128,7 +130,7 @@ void ALevelEditorGameMode::SetEditorMode(EEditorMode NewMode)
     {
         CurrentMode = NewMode;
         OnEditorModeChanged.Broadcast(NewMode);
-        NotifyEditorTutorialEvent(FName(TEXT("ModeChanged")));
+        NotifyEditorTutorialEvent(GameEventTags::EditorModeChanged);
     }
 }
 
@@ -187,6 +189,12 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     }
     case EEditorBrush::PressurePlate:
     {
+        bool bGroupValid = GroupStyles.ContainsByPredicate([this](const FMechanismGroupStyleData& GS) { return GS.GroupId == CurrentGroupId; });
+        if (!bGroupValid)
+        {
+            OnEditorError.Broadcast(NSLOCTEXT("Editor", "NoGroupForPlate", "请先创建或选择一个组，再放置压力板"));
+            return;
+        }
         FGridCell Cell;
         Cell.CellType = EGridCellType::PressurePlate;
         Cell.GroupId = CurrentGroupId;
@@ -224,7 +232,7 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
 
     bIsDirty = true;
     UpdateGridVisualizerBounds();
-    NotifyEditorTutorialEvent(FName(TEXT("CellPainted")));
+    NotifyEditorTutorialEvent(GameEventTags::EditorCellPainted);
 }
 
 void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
@@ -276,7 +284,7 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
     // Notify tutorial regardless of erase path
-    NotifyEditorTutorialEvent(FName(TEXT("CellErased")));
+    NotifyEditorTutorialEvent(GameEventTags::EditorCellErased);
 
     // Check if erasing a group anchor (any cell whose BP has a component with AssignGroup flow)
     if (IsGroupAnchor(Pos))
@@ -478,7 +486,7 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
     bIsDirty = false;
     UpdateGridVisualizerBounds();
     FocusEditorCamera();
-    NotifyEditorTutorialEvent(FName(TEXT("NewLevel")));
+    NotifyEditorTutorialEvent(GameEventTags::EditorNewLevel);
 }
 
 bool ALevelEditorGameMode::SaveLevel(const FString& FileName)
@@ -512,7 +520,7 @@ bool ALevelEditorGameMode::SaveLevel(const FString& FileName)
     if (ULevelSerializer::SaveToJson(Data, FilePath))
     {
         bIsDirty = false;
-        NotifyEditorTutorialEvent(FName(TEXT("LevelSaved")));
+        NotifyEditorTutorialEvent(GameEventTags::EditorLevelSaved);
         return true;
     }
     return false;
@@ -535,7 +543,7 @@ bool ALevelEditorGameMode::LoadLevel(const FString& FileName)
     RestoreFromLevelData(Data);
     bIsDirty = false;
     FocusEditorCamera();
-    NotifyEditorTutorialEvent(FName(TEXT("LevelLoaded")));
+    NotifyEditorTutorialEvent(GameEventTags::EditorLevelLoaded);
     return true;
 }
 
@@ -587,7 +595,7 @@ void ALevelEditorGameMode::TestCurrentLevel()
     FString TempFilePath = ULevelSerializer::GetDefaultLevelDirectory() / TEXT("_temp_editor_test.json");
     ULevelSerializer::SaveToJson(Data, TempFilePath);
 
-    NotifyEditorTutorialEvent(FName(TEXT("LevelTested")));
+    NotifyEditorTutorialEvent(GameEventTags::EditorLevelTested);
     UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("GameMap")),
         true, TEXT("FromEditor=true?LevelJson=") + TempFilePath);
 }
@@ -607,7 +615,7 @@ int32 ALevelEditorGameMode::CreateNewGroup()
     CurrentGroupId = MaxGroupId;
     bIsDirty = true;
     OnGroupCreated.Broadcast(MaxGroupId);
-    NotifyEditorTutorialEvent(FName(TEXT("GroupCreated")));
+    NotifyEditorTutorialEvent(GameEventTags::EditorGroupCreated);
     return MaxGroupId;
 }
 
@@ -645,6 +653,19 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
 
     // Remove from GroupStyles
     GroupStyles.RemoveAll([GroupId](const FMechanismGroupStyleData& GS) { return GS.GroupId == GroupId; });
+
+    // Recalculate MaxGroupId from remaining groups
+    MaxGroupId = 0;
+    for (const FMechanismGroupStyleData& GS : GroupStyles)
+    {
+        MaxGroupId = FMath::Max(MaxGroupId, GS.GroupId);
+    }
+
+    // If deleted group was selected, switch to another group or reset
+    if (CurrentGroupId == GroupId)
+    {
+        CurrentGroupId = GroupStyles.Num() > 0 ? GroupStyles.Last().GroupId : 0;
+    }
 
     bIsDirty = true;
     OnGroupDeleted.Broadcast(GroupId);

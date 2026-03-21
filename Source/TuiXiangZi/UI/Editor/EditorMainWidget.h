@@ -140,6 +140,9 @@ protected:
 	UFUNCTION()
 	void HandleGroupDeleted(int32 GroupId);
 
+	UFUNCTION()
+	void HandleEditorError(const FText& Message);
+
 	// ============================================================
 	// Sub-panel Delegate Handlers
 	// ============================================================

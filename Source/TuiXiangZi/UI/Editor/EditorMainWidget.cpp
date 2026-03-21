@@ -36,6 +36,7 @@ void UEditorMainWidget::NativeConstruct()
 	GameMode->OnEditorModeChanged.AddDynamic(this, &UEditorMainWidget::HandleModeChanged);
 	GameMode->OnGroupCreated.AddDynamic(this, &UEditorMainWidget::HandleGroupCreated);
 	GameMode->OnGroupDeleted.AddDynamic(this, &UEditorMainWidget::HandleGroupDeleted);
+	GameMode->OnEditorError.AddDynamic(this, &UEditorMainWidget::HandleEditorError);
 
 	// 3. Bind Sub-panel Delegates
 	// Sidebar
@@ -92,6 +93,7 @@ void UEditorMainWidget::NativeDestruct()
 		GameMode->OnEditorModeChanged.RemoveDynamic(this, &UEditorMainWidget::HandleModeChanged);
 		GameMode->OnGroupCreated.RemoveDynamic(this, &UEditorMainWidget::HandleGroupCreated);
 		GameMode->OnGroupDeleted.RemoveDynamic(this, &UEditorMainWidget::HandleGroupDeleted);
+		GameMode->OnEditorError.RemoveDynamic(this, &UEditorMainWidget::HandleEditorError);
 	}
 
 	Super::NativeDestruct();
@@ -165,6 +167,14 @@ void UEditorMainWidget::HandleGroupDeleted(int32 GroupId)
 		GroupManager->RemoveGroupEntry(GroupId);
 	}
 	RefreshStats();
+}
+
+void UEditorMainWidget::HandleEditorError(const FText& Message)
+{
+	if (StatusBar)
+	{
+		StatusBar->ShowTemporaryMessage(Message);
+	}
 }
 
 // ============================================================

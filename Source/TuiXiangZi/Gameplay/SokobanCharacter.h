@@ -3,9 +3,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Grid/GridTypes.h"
+#include "Events/GameEventPayload.h"
 #include "SokobanCharacter.generated.h"
 
 class AGridManager;
+class UGameEventBus;
 class UInputMappingContext;
 class UInputAction;
 class USpringArmComponent;
@@ -64,7 +66,7 @@ protected:
     FVector MoveTargetLocation;
     FVector MoveDirection;
 
-    void OnActorLogicalMoved(AActor* Actor, FIntPoint From, FIntPoint To);
+    void OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload);
 
     // ===== 相机 =====
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
