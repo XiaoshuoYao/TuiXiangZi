@@ -144,6 +144,12 @@ protected:
     void DestroyVisualActor(FIntPoint GridPos);
     void DestroyAllVisualActors();
 
+    /** Compute yaw rotation for a door based on adjacent wall cells. */
+    float ComputeDoorYaw(FIntPoint GridPos) const;
+
+    /** Re-spawn any adjacent door visuals so they re-align with walls. */
+    void RefreshAdjacentDoors(FIntPoint GridPos);
+
     ATileVisualActor* SpawnTileVisualFromStyle(const FGridCell& Cell, const FVector& WorldPos,
         FActorSpawnParameters& SpawnParams);
 

@@ -122,17 +122,10 @@ void ALevelEditorGameMode::CancelPlacementMode()
 
 EGridCellType ALevelEditorGameMode::BrushToCellType(EEditorBrush Brush) const
 {
-    switch (Brush)
-    {
-    case EEditorBrush::Floor:          return EGridCellType::Floor;
-    case EEditorBrush::Wall:           return EGridCellType::Wall;
-    case EEditorBrush::Ice:            return EGridCellType::Ice;
-    case EEditorBrush::Goal:           return EGridCellType::Goal;
-    case EEditorBrush::Door:           return EGridCellType::Door;
-    case EEditorBrush::PressurePlate:  return EGridCellType::PressurePlate;
-    case EEditorBrush::BoxSpawn:       return EGridCellType::Box;
-    default:                           return EGridCellType::Floor;
-    }
+    EGridCellType Type = BrushUtils::BrushToCellType(Brush);
+    // 共享查表默认返回 Empty，但编辑器中 fallback 为 Floor
+    return (Type == EGridCellType::Empty && Brush != EEditorBrush::Eraser && Brush != EEditorBrush::PlayerStart)
+        ? EGridCellType::Floor : Type;
 }
 
 void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
@@ -274,10 +267,8 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
     if (GridManagerRef->HasCell(Pos))
     {
         FGridCell Cell = GridManagerRef->GetCell(Pos);
-        if (Cell.CellType == EGridCellType::Wall
-            || Cell.CellType == EGridCellType::PressurePlate
-            || Cell.CellType == EGridCellType::Goal
-            || Cell.CellType == EGridCellType::Box)
+        const FCellTypeDescriptor* Desc = GridTypeUtils::GetDescriptor(Cell.CellType);
+        if (Desc && Desc->bEraseReplacesWithFloor)
         {
             FGridCell FloorCell;
             FloorCell.CellType = EGridCellType::Floor;
@@ -760,19 +751,8 @@ FString ALevelEditorGameMode::GetStatusText() const
         break;
     }
 
-    FString BrushStr;
-    switch (CurrentBrush)
-    {
-    case EEditorBrush::Floor: BrushStr = TEXT("Floor"); break;
-    case EEditorBrush::Wall: BrushStr = TEXT("Wall"); break;
-    case EEditorBrush::Ice: BrushStr = TEXT("Ice"); break;
-    case EEditorBrush::Goal: BrushStr = TEXT("Goal"); break;
-    case EEditorBrush::Door: BrushStr = TEXT("Door"); break;
-    case EEditorBrush::PressurePlate: BrushStr = TEXT("Plate"); break;
-    case EEditorBrush::BoxSpawn: BrushStr = TEXT("Box"); break;
-    case EEditorBrush::PlayerStart: BrushStr = TEXT("Start"); break;
-    case EEditorBrush::Eraser: BrushStr = TEXT("Eraser"); break;
-    }
+    const FBrushDescriptor* BrushDesc = BrushUtils::GetDescriptor(CurrentBrush);
+    FString BrushStr = BrushDesc ? BrushDesc->StatusName : TEXT("Unknown");
 
     return FString::Printf(TEXT("[%s] Brush: %s | Cells: %d | Boxes: %d | Groups: %d"),
         *ModeStr, *BrushStr, GetCellCount(), GetBoxCount(), GetGroupCount());

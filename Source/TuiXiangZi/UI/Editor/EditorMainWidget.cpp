@@ -247,7 +247,7 @@ void UEditorMainWidget::HandleToolbarTest()
 	if (!GameMode) return;
 
 	FLevelValidationResult Result = GameMode->ValidateLevel();
-	if (Result.HasErrors())
+	if (Result.HasErrors() || Result.HasWarnings())
 	{
 		ShowValidationPanel(Result, EValidationContext::Test);
 	}
@@ -420,7 +420,14 @@ void UEditorMainWidget::HandleLoadLevelConfirmed(const FString& FileName)
 void UEditorMainWidget::HandleValidationForceConfirmed()
 {
 	CloseDialog();
-	ShowSaveLevelDialog();
+	if (PendingValidationContext == EValidationContext::Test)
+	{
+		GameMode->TestCurrentLevel();
+	}
+	else
+	{
+		ShowSaveLevelDialog();
+	}
 }
 
 void UEditorMainWidget::HandleValidationClosed()

@@ -76,6 +76,7 @@ LevelEditorGameMode::SaveLevel → Build FLevelData → Validate → LevelSerial
 ## Design Patterns
 - **Grid-Based Discrete Movement** — All positions are `FIntPoint`.
 - **Component-Based Mechanisms** — Pluggable mechanism components on TileVisualActor.
+- **Descriptor-Driven Types** — `FCellTypeDescriptor` (GridTypes.h) centralizes cell type properties (passability, underlay, erase behavior, serialization string). `FBrushDescriptor` (EditorBrushTypes.h) centralizes editor brush properties (display name, shortcut, icon color, cell type mapping). Adding a new cell type = add enum value + add one row to each descriptor table.
 - **Event-Driven** — Multicast delegates for decoupling subsystems.
 - **Undo/Snapshot** — Stack-based move history in GameState.
 - **Style Catalog** — Centralized visual style management via DataAsset.

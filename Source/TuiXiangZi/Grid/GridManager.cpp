@@ -54,17 +54,10 @@ bool AGridManager::IsCellPassable(FIntPoint GridPos) const
 {
     if (!HasCell(GridPos)) return false;
     const FGridCell& Cell = GridCells[GridPos];
-    switch (Cell.CellType)
-    {
-    case EGridCellType::Wall: return false;
-    case EGridCellType::Door: return Cell.bDoorOpen;
-    case EGridCellType::Floor:
-    case EGridCellType::Box:
-    case EGridCellType::PressurePlate:
-    case EGridCellType::Ice:
-    case EGridCellType::Goal: return true;
-    default: return false;
-    }
+    // Door 的通行性由运行时状态决定
+    if (Cell.CellType == EGridCellType::Door) return Cell.bDoorOpen;
+    const FCellTypeDescriptor* Desc = GridTypeUtils::GetDescriptor(Cell.CellType);
+    return Desc ? Desc->bPassable : false;
 }
 
 bool AGridManager::CanPushBoxTo(FIntPoint GridPos) const
@@ -86,12 +79,14 @@ void AGridManager::SetCell(FIntPoint GridPos, const FGridCell& Cell)
 {
     GridCells.Add(GridPos, Cell);
     SpawnOrUpdateVisualActor(GridPos, Cell);
+    RefreshAdjacentDoors(GridPos);
 }
 
 void AGridManager::RemoveCell(FIntPoint GridPos)
 {
     GridCells.Remove(GridPos);
     DestroyVisualActor(GridPos);
+    RefreshAdjacentDoors(GridPos);
 }
 
 void AGridManager::SetCellOccupant(FIntPoint GridPos, AActor* Occupant)
@@ -538,6 +533,13 @@ const FTileVisualStyle* AGridManager::ResolveTileVisual(const FGridCell& Cell) c
             // Only use this style if its type matches the cell type
             if (Style->ApplicableType == Cell.CellType)
                 return Style;
+            UE_LOG(LogTemp, Warning, TEXT("ResolveTileVisual: Style '%s' ApplicableType mismatch (style=%d, cell=%d), falling back"),
+                *Cell.VisualStyleId.ToString(), (int)Style->ApplicableType, (int)Cell.CellType);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("ResolveTileVisual: Style '%s' not found in catalog, falling back"),
+                *Cell.VisualStyleId.ToString());
         }
     }
     // Fallback: first style for this cell type
@@ -598,11 +600,8 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
     // Spawn floor underlay for special cell types (layered on top of floor)
-    const bool bNeedsFloorUnderlay = (Cell.CellType == EGridCellType::Wall
-        || Cell.CellType == EGridCellType::PressurePlate
-        || Cell.CellType == EGridCellType::Door
-        || Cell.CellType == EGridCellType::Goal
-        || Cell.CellType == EGridCellType::Box);
+    const FCellTypeDescriptor* CellDesc = GridTypeUtils::GetDescriptor(Cell.CellType);
+    const bool bNeedsFloorUnderlay = CellDesc && CellDesc->bNeedsFloorUnderlay;
 
     if (bNeedsFloorUnderlay)
     {
@@ -628,6 +627,13 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
     ATileVisualActor* Visual = SpawnTileVisualFromStyle(Cell, WorldPos, SpawnParams);
     if (!Visual) return;
 
+    // Auto-align door with adjacent walls
+    if (Cell.CellType == EGridCellType::Door)
+    {
+        float Yaw = ComputeDoorYaw(GridPos);
+        Visual->SetActorRotation(FRotator(0.0f, Yaw, 0.0f));
+    }
+
     Visual->InitializeForGrid(CellSize, GridPos);
     VisualActors.Add(GridPos, Visual);
 
@@ -645,6 +651,39 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         {
             AllModifiers.Add(ModComp);
             ModifierLookup.Add(GridPos, ModComp);
+        }
+    }
+}
+
+float AGridManager::ComputeDoorYaw(FIntPoint GridPos) const
+{
+    auto IsWall = [this](FIntPoint Pos) -> bool
+    {
+        if (const FGridCell* Cell = GridCells.Find(Pos))
+            return Cell->CellType == EGridCellType::Wall;
+        return false;
+    };
+
+    // Coordinate convention: Left=(1,0), Right=(-1,0), Up=(0,1), Down=(0,-1)
+    const bool bWallOnX = IsWall(GridPos + FIntPoint(1, 0)) || IsWall(GridPos + FIntPoint(-1, 0));
+    const bool bWallOnY = IsWall(GridPos + FIntPoint(0, 1)) || IsWall(GridPos + FIntPoint(0, -1));
+
+    if (bWallOnX && !bWallOnY)
+        return 90.0f;  // Walls along X axis → door spans horizontally
+    // Default: walls along Y axis or ambiguous
+    return 0.0f;
+}
+
+void AGridManager::RefreshAdjacentDoors(FIntPoint GridPos)
+{
+    static const FIntPoint Offsets[] = { {0,1}, {0,-1}, {1,0}, {-1,0} };
+    for (const FIntPoint& Off : Offsets)
+    {
+        FIntPoint Neighbor = GridPos + Off;
+        if (const FGridCell* NCell = GridCells.Find(Neighbor))
+        {
+            if (NCell->CellType == EGridCellType::Door)
+                SpawnOrUpdateVisualActor(Neighbor, *NCell);
         }
     }
 }

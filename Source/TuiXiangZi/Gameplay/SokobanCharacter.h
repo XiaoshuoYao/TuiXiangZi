@@ -50,11 +50,15 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     UInputAction* MoveRightAction;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    UInputAction* UndoAction;
+
     void OnMoveUp(const struct FInputActionValue& Value);
     void OnMoveDown(const struct FInputActionValue& Value);
     void OnMoveLeft(const struct FInputActionValue& Value);
     void OnMoveRight(const struct FInputActionValue& Value);
     void OnMoveInput(EMoveDirection Dir);
+    void OnUndo(const struct FInputActionValue& Value);
 
     // ===== 网格移动 =====
     FVector MoveTargetLocation;

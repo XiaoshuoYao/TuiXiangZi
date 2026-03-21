@@ -85,6 +85,8 @@ void ASokobanCharacter::BeginPlay()
             EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveLeft);
         if (MoveRightAction)
             EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveRight);
+        if (UndoAction)
+            EnhancedInput->BindAction(UndoAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnUndo);
     }
 }
 
@@ -127,6 +129,8 @@ void ASokobanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
             EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveLeft);
         if (MoveRightAction)
             EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveRight);
+        if (UndoAction)
+            EnhancedInput->BindAction(UndoAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnUndo);
     }
 }
 
@@ -134,6 +138,21 @@ void ASokobanCharacter::OnMoveUp(const FInputActionValue& Value) { OnMoveInput(E
 void ASokobanCharacter::OnMoveDown(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Down); }
 void ASokobanCharacter::OnMoveLeft(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Left); }
 void ASokobanCharacter::OnMoveRight(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Right); }
+
+void ASokobanCharacter::OnUndo(const FInputActionValue& Value)
+{
+    if (bIsMoving) return;
+
+    if (ASokobanGameMode* GM = Cast<ASokobanGameMode>(GetWorld()->GetAuthGameMode()))
+    {
+        if (GM->IsPauseMenuVisible()) return;
+        GM->RequestUndo();
+        GM->UpdateBoxOnPlateVisuals();
+
+        ASokobanGameState* GS = GetWorld()->GetGameState<ASokobanGameState>();
+        GM->OnStepCountChanged.Broadcast(GS ? GS->GetStepCount() : 0);
+    }
+}
 
 void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
 {

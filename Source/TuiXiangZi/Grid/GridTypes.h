@@ -62,8 +62,27 @@ FORCEINLINE FIntPoint DirectionToOffset(EMoveDirection Dir)
     }
 }
 
+// ============================================================
+// Cell Type Descriptor — 集中描述每种地块类型的属性
+// 新增地块时只需在此处添加一行描述，即可自动适配通行判定、序列化、编辑器擦除等逻辑
+// ============================================================
+struct FCellTypeDescriptor
+{
+    EGridCellType Type;
+    const TCHAR*  TypeString;            // 序列化用字符串 (如 "Wall")
+    bool          bPassable;             // 默认可通行性 (Door 有运行时覆盖)
+    bool          bNeedsFloorUnderlay;   // 渲染时需要底层地板
+    bool          bEraseReplacesWithFloor; // 编辑器擦除时替换为地板而非移除
+};
+
 namespace GridTypeUtils
 {
+    /** 获取指定类型的描述符，未找到返回 nullptr */
+    const FCellTypeDescriptor* GetDescriptor(EGridCellType Type);
+
+    /** 获取完整描述符表 */
+    TConstArrayView<FCellTypeDescriptor> GetAllDescriptors();
+
     FString CellTypeToString(EGridCellType Type);
     EGridCellType StringToCellType(const FString& Str);
 }

@@ -14,31 +14,9 @@
 #include "Components/Spacer.h"
 #include "Engine/Texture2D.h"
 
-// ============================================================
-// Brush configuration table
-// ============================================================
-struct FBrushConfig
-{
-	EEditorBrush Brush;
-	const TCHAR* DisplayName;
-	const TCHAR* Shortcut;
-	FLinearColor IconColor;
-};
-
-static const FBrushConfig GBrushConfigs[] =
-{
-	{ EEditorBrush::Floor,         TEXT("地板"),     TEXT("1"), FLinearColor(1.0f, 1.0f, 1.0f) },
-	{ EEditorBrush::Wall,          TEXT("墙壁"),     TEXT("2"), FLinearColor(0.533f, 0.533f, 0.533f) },
-	{ EEditorBrush::Ice,           TEXT("冰面"),     TEXT("3"), FLinearColor(0.4f, 0.8f, 1.0f) },
-	{ EEditorBrush::Goal,          TEXT("目标"),     TEXT("4"), FLinearColor(1.0f, 0.267f, 0.267f) },
-	{ EEditorBrush::Door,          TEXT("机关门"),   TEXT("5"), FLinearColor(0.667f, 0.4f, 1.0f) },
-	{ EEditorBrush::PressurePlate, TEXT("压力板"),   TEXT("6"), FLinearColor(1.0f, 0.533f, 0.0f) },
-	{ EEditorBrush::BoxSpawn,      TEXT("箱子生成"), TEXT("7"), FLinearColor(1.0f, 0.667f, 0.0f) },
-	{ EEditorBrush::PlayerStart,   TEXT("玩家起点"), TEXT("8"), FLinearColor(0.267f, 1.0f, 0.267f) },
-	{ EEditorBrush::Eraser,        TEXT("橡皮擦"),   TEXT("E"), FLinearColor(1.0f, 0.267f, 0.267f) },
-};
-
-static constexpr int32 GBrushCount = UE_ARRAY_COUNT(GBrushConfigs);
+// Brush configuration from shared descriptor table
+static auto GetBrushConfigs() { return BrushUtils::GetAllBrushDescriptors(); }
+static int32 GetBrushCount() { return GetBrushConfigs().Num(); }
 
 // ============================================================
 // Color constants
@@ -83,9 +61,9 @@ void UEditorSidebarWidget::CreateBrushButtons()
 	BrushButtonBorders.Empty();
 	BrushOrder.Empty();
 
-	for (int32 i = 0; i < GBrushCount; ++i)
+	for (int32 i = 0; i < GetBrushCount(); ++i)
 	{
-		const FBrushConfig& Cfg = GBrushConfigs[i];
+		const FBrushDescriptor& Cfg = GetBrushConfigs()[i];
 
 		// --- Border (outer frame for highlight) ---
 		UBorder* Border = NewObject<UBorder>(this);
@@ -178,15 +156,15 @@ void UEditorSidebarWidget::CreateBrushButtons()
 // ============================================================
 // Per-button click handlers (UE requires parameterless UFUNCTION for OnClicked)
 // ============================================================
-void UEditorSidebarWidget::HandleBrushButton0() { HandleBrushButtonClicked(GBrushConfigs[0].Brush); }
-void UEditorSidebarWidget::HandleBrushButton1() { HandleBrushButtonClicked(GBrushConfigs[1].Brush); }
-void UEditorSidebarWidget::HandleBrushButton2() { HandleBrushButtonClicked(GBrushConfigs[2].Brush); }
-void UEditorSidebarWidget::HandleBrushButton3() { HandleBrushButtonClicked(GBrushConfigs[3].Brush); }
-void UEditorSidebarWidget::HandleBrushButton4() { HandleBrushButtonClicked(GBrushConfigs[4].Brush); }
-void UEditorSidebarWidget::HandleBrushButton5() { HandleBrushButtonClicked(GBrushConfigs[5].Brush); }
-void UEditorSidebarWidget::HandleBrushButton6() { HandleBrushButtonClicked(GBrushConfigs[6].Brush); }
-void UEditorSidebarWidget::HandleBrushButton7() { HandleBrushButtonClicked(GBrushConfigs[7].Brush); }
-void UEditorSidebarWidget::HandleBrushButton8() { HandleBrushButtonClicked(GBrushConfigs[8].Brush); }
+void UEditorSidebarWidget::HandleBrushButton0() { HandleBrushButtonClicked(GetBrushConfigs()[0].Brush); }
+void UEditorSidebarWidget::HandleBrushButton1() { HandleBrushButtonClicked(GetBrushConfigs()[1].Brush); }
+void UEditorSidebarWidget::HandleBrushButton2() { HandleBrushButtonClicked(GetBrushConfigs()[2].Brush); }
+void UEditorSidebarWidget::HandleBrushButton3() { HandleBrushButtonClicked(GetBrushConfigs()[3].Brush); }
+void UEditorSidebarWidget::HandleBrushButton4() { HandleBrushButtonClicked(GetBrushConfigs()[4].Brush); }
+void UEditorSidebarWidget::HandleBrushButton5() { HandleBrushButtonClicked(GetBrushConfigs()[5].Brush); }
+void UEditorSidebarWidget::HandleBrushButton6() { HandleBrushButtonClicked(GetBrushConfigs()[6].Brush); }
+void UEditorSidebarWidget::HandleBrushButton7() { HandleBrushButtonClicked(GetBrushConfigs()[7].Brush); }
+void UEditorSidebarWidget::HandleBrushButton8() { HandleBrushButtonClicked(GetBrushConfigs()[8].Brush); }
 
 void UEditorSidebarWidget::HandleBrushButtonClicked(EEditorBrush Brush)
 {
@@ -304,16 +282,7 @@ void UEditorSidebarWidget::ExitPlateMode()
 // ============================================================
 EGridCellType UEditorSidebarWidget::BrushToCellType(EEditorBrush Brush)
 {
-	switch (Brush)
-	{
-		case EEditorBrush::Floor:         return EGridCellType::Floor;
-		case EEditorBrush::Wall:          return EGridCellType::Wall;
-		case EEditorBrush::Ice:           return EGridCellType::Ice;
-		case EEditorBrush::Goal:          return EGridCellType::Goal;
-		case EEditorBrush::Door:          return EGridCellType::Door;
-		case EEditorBrush::PressurePlate: return EGridCellType::PressurePlate;
-		default:                          return EGridCellType::Empty;
-	}
+	return BrushUtils::BrushToCellType(Brush);
 }
 
 // ============================================================
@@ -325,9 +294,20 @@ void UEditorSidebarWidget::RefreshVariantPanel(EEditorBrush Brush)
 
 	EGridCellType CellType = BrushToCellType(Brush);
 
-	if (CellType == EGridCellType::Empty || !TileStyleCatalog)
+	auto HideVariantPanel = [&]()
 	{
 		VariantPanel->SetVisibility(ESlateVisibility::Collapsed);
+		VariantGrid->ClearChildren();
+		VariantStyleIds.Empty();
+		VariantBorders.Empty();
+		VariantButtons.Empty();
+		CurrentVisualStyleId = NAME_None;
+		OnVariantSelected.Broadcast(NAME_None);
+	};
+
+	if (CellType == EGridCellType::Empty || !TileStyleCatalog)
+	{
+		HideVariantPanel();
 		return;
 	}
 
@@ -335,8 +315,7 @@ void UEditorSidebarWidget::RefreshVariantPanel(EEditorBrush Brush)
 
 	if (Styles.Num() == 0)
 	{
-		VariantPanel->SetVisibility(ESlateVisibility::Collapsed);
-		CurrentVisualStyleId = NAME_None;
+		HideVariantPanel();
 		return;
 	}
 
