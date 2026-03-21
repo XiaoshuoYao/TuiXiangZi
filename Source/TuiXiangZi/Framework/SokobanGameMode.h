@@ -6,6 +6,8 @@
 
 class AGridManager;
 class UPauseMenuWidget;
+class UTutorialDataAsset;
+class UTutorialWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStepCountChanged, int32, NewCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelCompleted, int32, TotalSteps);
@@ -98,6 +100,12 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UPauseMenuWidget> PauseMenuWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial")
+    UTutorialDataAsset* TutorialData = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial")
+    TSubclassOf<UTutorialWidget> TutorialWidgetClass;
 
 private:
     UPROPERTY()

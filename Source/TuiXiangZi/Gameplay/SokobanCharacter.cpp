@@ -9,6 +9,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/CapsuleComponent.h"
+#include "Tutorial/TutorialSubsystem.h"
 
 ASokobanCharacter::ASokobanCharacter()
 {
@@ -200,6 +201,14 @@ void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
             GM->UpdateBoxOnPlateVisuals();
             GM->OnStepCountChanged.Broadcast(GS ? GS->GetStepCount() : 0);
         }
+
+        // Notify tutorial subsystem
+        if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+        {
+            TutSub->NotifyCondition(ETutorialConditionType::OnPlayerMove);
+            TutSub->NotifyPlayerMoved(CurrentGridPos);
+            TutSub->NotifyStepCountChanged(GS ? GS->GetStepCount() : 0);
+        }
     }
     else
     {
@@ -214,6 +223,12 @@ void ASokobanCharacter::OnMoveInput(EMoveDirection Dir)
 void ASokobanCharacter::SnapToGridPos(FIntPoint GridPos)
 {
     CurrentGridPos = GridPos;
+
+    // Reset movement state to prevent stale animation from previous level
+    bIsMoving = false;
+    MoveDirection = FVector::ZeroVector;
+    GetCharacterMovement()->StopMovementImmediately();
+
     if (!GridManagerRef)
     {
         GridManagerRef = Cast<AGridManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AGridManager::StaticClass()));
@@ -223,6 +238,7 @@ void ASokobanCharacter::SnapToGridPos(FIntPoint GridPos)
         FVector WorldPos = GridManagerRef->GridToWorld(GridPos);
         float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
         WorldPos.Z = HalfHeight;
+        MoveTargetLocation = WorldPos;
         TeleportTo(WorldPos, GetActorRotation(), false, true);
     }
 }

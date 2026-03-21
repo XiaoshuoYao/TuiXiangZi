@@ -103,6 +103,13 @@ namespace
 
 void FUE5MCPModule::StartupModule()
 {
+	// Skip entirely when running as a commandlet (cooking, packaging, etc.)
+	if (IsRunningCommandlet())
+	{
+		UE_LOG(LogUE5MCP, Log, TEXT("Running in commandlet mode — skipping MCP server startup"));
+		return;
+	}
+
 	// Create runtime services
 	RuntimeState = MakeUnique<FMCPRuntimeState>();
 	ResourceStore = MakeUnique<FMCPResourceStore>();

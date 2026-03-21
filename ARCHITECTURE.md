@@ -12,7 +12,8 @@ Source/TuiXiangZi/
 │   └── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal
 ├── LevelData/       # LevelDataTypes, LevelSerializer (JSON)
 ├── Editor/          # LevelEditorGameMode, EditorGridVisualizer, LevelEditorPawn, BrushTypes
-└── UI/              # MainMenu, LevelSelect, PauseMenu, PlayerController
+├── Tutorial/        # TutorialTypes, TutorialDataAsset, TutorialSubsystem
+└── UI/              # MainMenu, LevelSelect, PauseMenu, TutorialWidget, PlayerController
     └── Editor/      # EditorMain, Sidebar, Toolbar, StatusBar, GroupManager, Dialogs
 ```
 
@@ -48,9 +49,14 @@ Source/TuiXiangZi/
 - **EditorGridVisualizer** — Procedural mesh grid lines.
 - **LevelEditorPawn** — Editor input handling, dialog management.
 
-### 6. UI (`UI/`)
+### 6. Tutorial (`Tutorial/`)
+- **TutorialTypes** — Enums (`ETutorialAction`, `ETutorialTriggerType`, `ETutorialDisplayType`) and structs (`FTutorialStep`, `FLevelTutorialData`, `FTutorialTriggerConfig`).
+- **TutorialDataAsset** — DataAsset holding per-level tutorial step configurations.
+- **TutorialSubsystem** (`UWorldSubsystem`) — Manages tutorial flow: triggers, completion conditions, widget lifecycle, pause/resume. Receives notifications from GameMode/Character/PushableBox.
+
+### 7. UI (`UI/`)
 - **Menu**: MainMenuWidget, PresetLevelSelectWidget, CustomLevelSelectWidget.
-- **In-Game**: PauseMenuWidget, TuiXiangZiPlayerController.
+- **In-Game**: PauseMenuWidget, TutorialWidget, TuiXiangZiPlayerController.
 - **Editor**: EditorMainWidget, EditorSidebarWidget, EditorToolbarWidget, EditorStatusBar, GroupManagerPanel, NewLevelDialog, LoadLevelDialog, SaveLevelDialog, ConfirmDialog, ValidationResultPanel, ColorPickerPopup.
 
 ## Key Data Flows

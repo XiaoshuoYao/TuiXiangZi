@@ -6,6 +6,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
+#include "Tutorial/TutorialSubsystem.h"
 
 UStaticMeshComponent* UPushableBoxComponent::FindOwnerMeshComp() const
 {
@@ -129,6 +130,15 @@ void UPushableBoxComponent::OnActorLogicalMoved(AActor* Actor, FIntPoint From, F
 	if (GridManagerRef)
 	{
 		SmoothMoveTo(GridManagerRef->GridToWorld(To));
+	}
+
+	// Notify tutorial subsystem that a box was pushed
+	if (UWorld* World = GetWorld())
+	{
+		if (UTutorialSubsystem* TutSub = World->GetSubsystem<UTutorialSubsystem>())
+		{
+			TutSub->NotifyCondition(ETutorialConditionType::OnPushBox);
+		}
 	}
 }
 

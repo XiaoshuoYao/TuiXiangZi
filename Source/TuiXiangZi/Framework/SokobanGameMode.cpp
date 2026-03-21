@@ -8,6 +8,9 @@
 #include "LevelData/LevelSerializer.h"
 #include "LevelData/LevelDataTypes.h"
 #include "UI/PauseMenuWidget.h"
+#include "Tutorial/TutorialSubsystem.h"
+#include "Tutorial/TutorialDataAsset.h"
+#include "UI/TutorialWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/Paths.h"
@@ -164,6 +167,13 @@ void ASokobanGameMode::ExecuteLoadLevel(const FString& JsonPath)
 
     GridManagerRef->CheckAllPressurePlateGroups();
     UpdateBoxOnPlateVisuals();
+
+    // Start tutorial for this level
+    if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+    {
+        TutSub->SetTutorialConfig(TutorialData, TutorialWidgetClass);
+        TutSub->StartTutorial(CurrentLevelIndex);
+    }
 }
 
 void ASokobanGameMode::LoadNextLevel()
@@ -182,6 +192,7 @@ void ASokobanGameMode::LoadNextLevel()
             {
                 GI->SelectedPresetIndex = NextIndex;
                 GI->SelectedLevelPath = PresetPaths[NextIndex];
+                CurrentLevelIndex = NextIndex;
                 ExecuteLoadLevel(GI->SelectedLevelPath);
                 return;
             }
@@ -208,6 +219,11 @@ void ASokobanGameMode::ResetCurrentLevel()
 {
     if (!CurrentLevelPath.IsEmpty())
     {
+        if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+        {
+            TutSub->NotifyCondition(ETutorialConditionType::OnReset);
+            TutSub->DismissTutorial();
+        }
         ExecuteLoadLevel(CurrentLevelPath);
     }
 }
@@ -221,6 +237,11 @@ void ASokobanGameMode::UndoLastMove()
     GS->RestoreSnapshot(Snapshot, GridManagerRef);
     UpdateBoxOnPlateVisuals();
     OnStepCountChanged.Broadcast(GS->StepCount);
+
+    if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+    {
+        TutSub->NotifyCondition(ETutorialConditionType::OnUndo);
+    }
 }
 
 void ASokobanGameMode::OnPlayerEnteredGoal(FIntPoint GoalPos)
@@ -374,6 +395,11 @@ void ASokobanGameMode::ShowPauseMenu()
         PauseMenuWidget->AddToViewport(100);
         bPauseMenuVisible = true;
         SetUIInputMode(true);
+
+        if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+        {
+            TutSub->SetPaused(true);
+        }
     }
 }
 
@@ -387,6 +413,11 @@ void ASokobanGameMode::HidePauseMenu()
     }
     bPauseMenuVisible = false;
     SetUIInputMode(false);
+
+    if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+    {
+        TutSub->SetPaused(false);
+    }
 }
 
 void ASokobanGameMode::ShowLevelCompleteMenu(int32 Steps)

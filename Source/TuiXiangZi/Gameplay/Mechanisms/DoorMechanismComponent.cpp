@@ -1,6 +1,7 @@
 #include "Gameplay/Mechanisms/DoorMechanismComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
+#include "Tutorial/TutorialSubsystem.h"
 
 void UDoorMechanismComponent::BeginPlay()
 {
@@ -39,6 +40,18 @@ void UDoorMechanismComponent::SetDoorOpen(bool bOpen)
 	if (bOpen == bIsOpen) return;
 
 	bIsOpen = bOpen;
+
+	// Notify tutorial subsystem when door opens
+	if (bOpen)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UTutorialSubsystem* TutSub = World->GetSubsystem<UTutorialSubsystem>())
+			{
+				TutSub->NotifyCondition(ETutorialConditionType::OnDoorOpened);
+			}
+		}
+	}
 
 	if (!DoorCurve || !DoorTimeline)
 	{
