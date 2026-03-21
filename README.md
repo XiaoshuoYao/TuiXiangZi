@@ -43,6 +43,24 @@
 - 教程数据通过 DataAsset 按关卡索引配置，无教程的关卡不会显示任何提示
 - 暂停菜单打开时教程弹窗自动隐藏，关闭后恢复
 
+#### 编辑器教程
+
+关卡编辑器同样支持教程引导，帮助新用户快速上手编辑器操作：
+
+- 复用与游玩教程相同的弹窗和流程机制
+- 通过 `OnGameplayEvent` 条件类型 + EventTag 字符串匹配编辑器操作，无需新增枚举值
+- 可用的 EventTag：
+  - `BrushChanged` — 切换笔刷
+  - `CellPainted` — 放置格子
+  - `CellErased` — 擦除格子
+  - `GroupCreated` — 创建分组
+  - `ModeChanged` — 编辑模式切换（如进入压力板放置模式）
+  - `NewLevel` — 新建关卡
+  - `LevelSaved` — 保存关卡
+  - `LevelLoaded` — 加载关卡
+  - `LevelTested` — 测试关卡
+- 编辑器教程在 DataAsset 的 `EditorTutorialSteps` 数组中配置，与游玩教程独立
+
 ### 关卡模式
 
 - **预设关卡** — 游戏自带的关卡，按顺序解锁
@@ -83,6 +101,7 @@
 1. 放置门后，进入放置压力板模式，为该门关联压力板
 2. 同一组内的所有压力板被触发后，对应的门将打开
 3. 通过 **Group Manager** 面板管理所有分组，支持创建、删除和自定义颜色
+4. 每个组可配置颜色，通过 **GroupColorIndicatorComponent** 在游戏中显示——该组件支持蓝图重载，可自定义颜色指示器的视觉形式（发光环、叠加材质、粒子特效等）
 
 ### 关卡验证
 
@@ -131,6 +150,8 @@
 我的做法是将教程管理器实现为 `UWorldSubsystem`（`TutorialSubsystem`），它独立于 GameMode 生命周期，不持有任何游戏逻辑，只通过 `NotifyCondition()` 等轻量通知接口接收外部事件。GameMode、Character、PushableBox、DoorMechanism 各自在关键时刻调用一行通知代码，教程系统据此判断是否推进——通知方对教程的存在完全无感。
 
 触发条件和完成条件共用同一套 `FTutorialCondition` 结构体和 `ETutorialConditionType` 枚举，这意味着"玩家到达某格子"既可以作为显示教程的触发条件，也可以作为关闭教程的完成条件，不需要维护两套独立的条件系统。教程内容通过 DataAsset 配置，关卡设计者可以在编辑器中直接编辑每个关卡的教程步骤，无需修改任何代码。
+
+这套设计的通用性在编辑器适配中得到了验证：关卡编辑器通过已有的 `OnGameplayEvent` + `EventTag` 机制发送编辑器操作通知（如笔刷切换、放置格子、保存关卡等），无需新增任何枚举值或修改条件匹配逻辑，只需在 `LevelEditorGameMode` 中添加一行 `NotifyGameplayEvent` 调用即可接入。为避免编辑器场景下教程干扰光标和输入模式，`TutorialSubsystem` 通过 `bIsEditorTutorial` 标记跳过输入模式切换。
 
 ### 编辑器和游玩怎么共存？—— 分离 GameMode，共享数据
 

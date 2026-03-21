@@ -11,6 +11,8 @@ class AGridManager;
 class AEditorGridVisualizer;
 class UTileStyleCatalog;
 class ATileVisualActor;
+class UTutorialDataAsset;
+class UTutorialWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBrushChanged, EEditorBrush, NewBrush);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEditorModeChanged, EEditorMode, NewMode);
@@ -190,6 +192,15 @@ protected:
     UPROPERTY()
     AActor* PlayerStartMarker;
 
+
+    // ===== Tutorial =====
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial")
+    UTutorialDataAsset* TutorialData = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial")
+    TSubclassOf<UTutorialWidget> TutorialWidgetClass;
+
+    void NotifyEditorTutorialEvent(FName EventTag);
 
     FString PendingRestoreJsonPath;
 

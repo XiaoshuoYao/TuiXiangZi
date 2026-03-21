@@ -64,6 +64,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "LevelSelect")
     static FString GetPresetLevelDirectory();
 
+    USokobanSaveGame* GetSaveGame() const { return CurrentSave; }
+
 private:
     UPROPERTY()
     USokobanSaveGame* CurrentSave = nullptr;

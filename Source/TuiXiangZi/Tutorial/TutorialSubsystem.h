@@ -17,8 +17,11 @@ public:
 	// Initialize configuration (called by GameMode in BeginPlay)
 	void SetTutorialConfig(UTutorialDataAsset* Data, TSubclassOf<UTutorialWidget> WidgetClass);
 
-	// Start tutorial for a level
+	// Start tutorial for a gameplay level
 	void StartTutorial(int32 PresetLevelIndex);
+
+	// Start tutorial for the level editor
+	void StartEditorTutorial();
 
 	// Unified notification: a condition was met (action-based: OnPlayerMove, OnPushBox, etc.)
 	void NotifyCondition(ETutorialConditionType Type);
@@ -65,6 +68,12 @@ private:
 	void TryMatchCompletion(const FTutorialCondition& Condition, ETutorialConditionType InType, int32 StepCount, FIntPoint PlayerPos, FName EventTag);
 
 	void SetUIInputMode(bool bUIMode);
+
+	// When true, skip input mode changes (editor already manages its own cursor/input)
+	bool bIsEditorTutorial = false;
+
+	// Storage for editor tutorial data (so ActiveTutorial can point to it)
+	FLevelTutorialData EditorTutorialStorage;
 
 	// Cached state for condition checks
 	int32 CachedStepCount = 0;

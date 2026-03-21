@@ -9,6 +9,7 @@
 #include "Gameplay/Mechanisms/DoorMechanismComponent.h"
 #include "Gameplay/Mechanisms/GoalMechanismComponent.h"
 #include "Gameplay/Modifiers/TileModifierComponent.h"
+#include "Gameplay/GroupColorIndicatorComponent.h"
 #include "DrawDebugHelpers.h"
 
 AGridManager::AGridManager()
@@ -440,6 +441,12 @@ void AGridManager::ApplyMechanismGroupStyles(const TArray<FMechanismGroupStyleDa
             Active = Base * 1.5f;
         }
         Mech->SetGroupColor(Base, Active);
+
+        if (AActor* MechOwner = Mech->GetOwner())
+        {
+            if (UGroupColorIndicatorComponent* Indicator = MechOwner->FindComponentByClass<UGroupColorIndicatorComponent>())
+                Indicator->SetGroupColor(Base, Active);
+        }
 
         if (UDoorMechanismComponent* DoorComp = Cast<UDoorMechanismComponent>(Mech))
             DoorComp->SetDoorStateImmediate(false);

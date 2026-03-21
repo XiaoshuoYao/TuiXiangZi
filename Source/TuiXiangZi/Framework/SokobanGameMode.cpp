@@ -168,11 +168,24 @@ void ASokobanGameMode::ExecuteLoadLevel(const FString& JsonPath)
     GridManagerRef->CheckAllPressurePlateGroups();
     UpdateBoxOnPlateVisuals();
 
-    // Start tutorial for this level
-    if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+    // Start tutorial for this level (skip when testing from editor or level already completed)
+    if (!bFromEditor)
     {
-        TutSub->SetTutorialConfig(TutorialData, TutorialWidgetClass);
-        TutSub->StartTutorial(CurrentLevelIndex);
+        bool bAlreadyCompleted = false;
+        if (USokobanGameInstance* GI = Cast<USokobanGameInstance>(GetGameInstance()))
+        {
+            FString FileName = FPaths::GetCleanFilename(JsonPath);
+            bAlreadyCompleted = GI->IsPresetLevelCompleted(FileName);
+        }
+
+        if (!bAlreadyCompleted)
+        {
+            if (UTutorialSubsystem* TutSub = GetWorld()->GetSubsystem<UTutorialSubsystem>())
+            {
+                TutSub->SetTutorialConfig(TutorialData, TutorialWidgetClass);
+                TutSub->StartTutorial(CurrentLevelIndex);
+            }
+        }
     }
 }
 

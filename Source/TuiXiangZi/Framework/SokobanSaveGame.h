@@ -18,5 +18,9 @@ public:
     UPROPERTY()
     int32 HighestUnlockedPresetIndex = 0;
 
+    /** Whether the editor tutorial has been shown. */
+    UPROPERTY()
+    bool bEditorTutorialCompleted = false;
+
     static const FString SaveSlotName;
 };

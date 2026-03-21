@@ -40,6 +40,37 @@ void UTutorialSubsystem::StartTutorial(int32 PresetLevelIndex)
 	ActiveTutorial = TutorialData->FindTutorialForLevel(PresetLevelIndex);
 	if (!ActiveTutorial || ActiveTutorial->Steps.Num() == 0) return;
 
+	bIsEditorTutorial = false;
+	CurrentStepIndex = 0;
+	CachedStepCount = 0;
+	bPaused = false;
+	bPendingShow = false;
+
+	const FTutorialStep& FirstStep = ActiveTutorial->Steps[0];
+	if (FirstStep.Trigger.Type == ETutorialConditionType::Immediate ||
+		FirstStep.Trigger.Type == ETutorialConditionType::None)
+	{
+		bWaitingForTrigger = false;
+		ShowCurrentStep();
+	}
+	else
+	{
+		bWaitingForTrigger = true;
+	}
+}
+
+void UTutorialSubsystem::StartEditorTutorial()
+{
+	DismissTutorial();
+
+	if (!TutorialData) return;
+	if (TutorialData->EditorTutorialSteps.Num() == 0) return;
+
+	// Build a temporary FLevelTutorialData to reuse the same flow
+	EditorTutorialStorage.Steps = TutorialData->EditorTutorialSteps;
+	ActiveTutorial = &EditorTutorialStorage;
+
+	bIsEditorTutorial = true;
 	CurrentStepIndex = 0;
 	CachedStepCount = 0;
 	bPaused = false;
@@ -171,6 +202,7 @@ void UTutorialSubsystem::DismissTutorial()
 	CurrentStepIndex = -1;
 	bWaitingForTrigger = false;
 	bPendingShow = false;
+	bIsEditorTutorial = false;
 }
 
 bool UTutorialSubsystem::IsTutorialActive() const
@@ -310,6 +342,9 @@ void UTutorialSubsystem::TryMatchCompletion(const FTutorialCondition& Condition,
 
 void UTutorialSubsystem::SetUIInputMode(bool bUIMode)
 {
+	// Editor already manages its own input mode and cursor — don't interfere
+	if (bIsEditorTutorial) return;
+
 	UWorld* World = GetWorld();
 	if (!World) return;
 

@@ -8,7 +8,7 @@ Unreal Engine 5.5 Sokoban puzzle game with built-in level editor. Single module:
 Source/TuiXiangZi/
 ├── Framework/       # GameInstance, GameMode, GameState, SaveGame
 ├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileVisualActor
-├── Gameplay/        # SokobanCharacter, PushableBoxComponent
+├── Gameplay/        # SokobanCharacter, PushableBoxComponent, GroupColorIndicatorComponent
 │   └── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal
 ├── LevelData/       # LevelDataTypes, LevelSerializer (JSON)
 ├── Editor/          # LevelEditorGameMode, EditorGridVisualizer, LevelEditorPawn, BrushTypes
@@ -34,6 +34,7 @@ Source/TuiXiangZi/
 ### 3. Gameplay (`Gameplay/`)
 - **SokobanCharacter** — Grid-based 4-direction movement, Enhanced Input, timeline animation (0.15s), top-down camera.
 - **PushableBoxComponent** — Box push/fall logic, plate feedback, material instance dynamics.
+- **GroupColorIndicatorComponent** — Blueprintable group color display. BP subclasses override `OnUpdateVisual` for custom visuals. Auto-notified by GridManager and GridMechanismComponent.
 - **Mechanisms** (component-based, attached to TileVisualActor):
   - `GridMechanismComponent` (abstract base) — activation, passability, group roles, editor placement flow.
   - `DoorMechanismComponent` — blocks passage when closed, animated open/close, activated by pressure plate groups.
@@ -45,19 +46,19 @@ Source/TuiXiangZi/
 - **LevelSerializer** — JSON serialization/deserialization, file discovery.
 
 ### 5. Editor (`Editor/`)
-- **LevelEditorGameMode** — Brush system (9 brushes), editor modes (Normal, PlacingPlatesForDoor, EditingDoorGroup), group management, validation, save/load/test.
+- **LevelEditorGameMode** — Brush system (9 brushes), editor modes, group management, validation, save/load/test. Sends editor tutorial events via `OnGameplayEvent` + EventTag.
 - **EditorGridVisualizer** — Procedural mesh grid lines.
 - **LevelEditorPawn** — Editor input handling, dialog management.
 
 ### 6. Tutorial (`Tutorial/`)
-- **TutorialTypes** — Enums (`ETutorialAction`, `ETutorialTriggerType`, `ETutorialDisplayType`) and structs (`FTutorialStep`, `FLevelTutorialData`, `FTutorialTriggerConfig`).
-- **TutorialDataAsset** — DataAsset holding per-level tutorial step configurations.
-- **TutorialSubsystem** (`UWorldSubsystem`) — Manages tutorial flow: triggers, completion conditions, widget lifecycle, pause/resume. Receives notifications from GameMode/Character/PushableBox.
+- **TutorialTypes** — Enums and structs for tutorial conditions/steps.
+- **TutorialDataAsset** — Per-level tutorial configs (gameplay + editor).
+- **TutorialSubsystem** (`UWorldSubsystem`) — Tutorial flow management. Supports gameplay and editor contexts via unified `FTutorialCondition` model.
 
 ### 7. UI (`UI/`)
 - **Menu**: MainMenuWidget, PresetLevelSelectWidget, CustomLevelSelectWidget.
 - **In-Game**: PauseMenuWidget, TutorialWidget, TuiXiangZiPlayerController.
-- **Editor**: EditorMainWidget, EditorSidebarWidget, EditorToolbarWidget, EditorStatusBar, GroupManagerPanel, NewLevelDialog, LoadLevelDialog, SaveLevelDialog, ConfirmDialog, ValidationResultPanel, ColorPickerPopup.
+- **Editor**: EditorMainWidget, Sidebar, Toolbar, StatusBar, GroupManagerPanel, Dialogs (New/Load/Save/Confirm), ValidationResultPanel, ColorPickerPopup.
 
 ## Key Data Flows
 
