@@ -55,6 +55,8 @@
 
 ### 工具栏
 
+![alt text](image-2.png)
+
 | 操作 | 说明 |
 |------|------|
 | **新建 New** | 创建指定尺寸的空白关卡 |
@@ -65,11 +67,15 @@
 
 ### 笔刷系统
 
+![alt text](image-3.png)
+
 侧边栏提供 10 种笔刷（快捷键 1-0），左键绘制，右键擦除：
 
 Floor、Wall、Ice、Goal、Door、Pressure Plate、Box Spawn、Player Start、Teleporter、Eraser
 
 ### 分组机制
+
+![alt text](image-4.png)
 
 门和压力板通过"组"进行关联：
 
@@ -82,6 +88,8 @@ Floor、Wall、Ice、Goal、Door、Pressure Plate、Box Spawn、Player Start、T
 传送阵同样通过分组配对，放置时自动进入配对模式。编辑器中会在配对的传送阵之间绘制箭头连线，直观显示传送关系。
 
 ### 编辑器可视化辅助
+
+![alt text](image-5.png)
 
 按 **G 键** 循环切换编辑器覆盖层：无 → 网格线 → 坐标标签 → 两者同时显示。传送阵箭头连线始终可见。
 
