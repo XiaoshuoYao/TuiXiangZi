@@ -1,0 +1,31 @@
+Section,PresetLevelIndex,StepIndex,DisplayType,TutorialText,WidgetClassOverride,TriggerType,TriggerStepCount,TriggerGridX,TriggerGridY,TriggerEventTag,CompletionType,CompletionStepCount,CompletionGridX,CompletionGridY,CompletionEventTag
+LevelTutorial,0,1,TextPopup,"欢迎来到推箱子！先学习基础移动。",,Immediate,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,0,2,TextPopup,"使用 WASD 移动角色。",,Immediate,0,<max_depth>,<max_depth>,None,OnPlayerMove,0,<max_depth>,<max_depth>,None
+LevelTutorial,0,3,TextPopup,"走一步后，试试按 R 键撤回到上一步位置。",,Immediate,0,<max_depth>,<max_depth>,None,OnUndo,0,<max_depth>,<max_depth>,None
+LevelTutorial,0,4,TextPopup,"熟悉后走到白色终点旗帜即可过关。",,Immediate,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,1,TextPopup,"本关学习推箱子与机关门机制。",,Immediate,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,2,TextPopup,"贴着箱子朝前移动即可推动箱子。",,Immediate,0,<max_depth>,<max_depth>,None,OnPushBox,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,3,TextPopup,"把箱子推到压力板上，对应的门会打开。",,Immediate,0,<max_depth>,<max_depth>,None,OnDoorOpened,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,4,TextPopup,"门打开后继续前进。",,Immediate,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,5,TextPopup,"本关还有另一种终点形式：机关门本身也可以作为终点。",,OnGridPosition,0,<max_depth>,<max_depth>,None,OnPlayerMove,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,6,TextPopup,"压力板和机关门通过颜色分组关联。",,None,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,7,TextPopup,"试着把箱子推到蓝色压力板上。",,None,0,<max_depth>,<max_depth>,None,OnPushBox,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,8,TextPopup,"只有同色的所有压力板都被占据时，对应机关门才会开启。",,None,0,<max_depth>,<max_depth>,None,OnDoorOpened,0,<max_depth>,<max_depth>,None
+LevelTutorial,1,9,TextPopup,"穿过打开的门即可通关。",,None,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,2,1,TextPopup,"本关学习冰面机制。",,Immediate,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,2,2,TextPopup,"进入冰面后会持续滑行，直到撞到障碍物才会停下。",,Immediate,0,<max_depth>,<max_depth>,None,OnPlayerMove,0,<max_depth>,<max_depth>,None
+LevelTutorial,2,3,TextPopup,"先观察地形，再规划停下的位置。",,Immediate,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,2,4,TextPopup,"试着把箱子推进传送阵，观察它会被传送到哪里。",,OnGridPosition,0,<max_depth>,<max_depth>,None,OnPushBox,0,<max_depth>,<max_depth>,None
+LevelTutorial,2,5,TextPopup,"当传送阵另外一边被占用时，无法传送。",,OnPlayerMove,0,<max_depth>,<max_depth>,None,None,0,<max_depth>,<max_depth>,None
+LevelTutorial,2,6,TextPopup,"再试试自己走进传送阵",,None,0,<max_depth>,<max_depth>,None,OnGameplayEvent,0,<max_depth>,<max_depth>,Mechanism.Teleported
+EditorTutorial,,1,TextPopup,"欢迎使用关卡编辑器！接下来会快速介绍各个区域。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,2,TextPopup,"顶部是工具栏：新建、保存、加载、测试关卡，以及返回主菜单。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,3,TextPopup,"左侧是笔刷列表，可切换地板、墙、冰面、目标、机关门、压力板、箱子和玩家起点。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,4,TextPopup,"基础操作：左键放置当前笔刷格子，右键删除格子；中键可旋转和缩放相机，WASD 可平移相机。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,5,TextPopup,"Overlay：按 G 可切换叠加信息。按一次显示网格线，按两次显示坐标，按三次同时显示网格线和坐标。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,6,TextPopup,"左下角是样式选择区，用于切换当前笔刷的视觉风格。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,7,TextPopup,"中央是画布区域：在网格上点击即可绘制当前笔刷。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,8,TextPopup,"分组机制：放置机关门后会自动进入压力板放置模式；放置的压力板会加入该机关门分组，点击右键可退出该模式。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,9,TextPopup,"底部会显示当前模式、当前笔刷，以及格子/箱子/分组统计信息。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,10,TextPopup,"建议流程：先铺地板和墙体，再放起点、箱子、目标，最后点击“测试关卡”验证可玩性。",,Immediate,0,0,0,None,None,0,0,0,None
+EditorTutorial,,11,TextPopup,"完成编辑后记得保存关卡，避免内容丢失。祝你做出有趣的谜题！",,Immediate,0,0,0,None,None,0,0,0,None

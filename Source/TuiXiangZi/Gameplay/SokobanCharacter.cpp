@@ -84,14 +84,28 @@ void ASokobanCharacter::BeginPlay()
     // 在 BeginPlay 中绑定 InputAction（SetupPlayerInputComponent 时 BP 属性可能还未反序列化）
     if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
     {
+        // Started: 首次按下立即移动一步
         if (MoveUpAction)
+        {
             EnhancedInput->BindAction(MoveUpAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveUp);
+            EnhancedInput->BindAction(MoveUpAction, ETriggerEvent::Completed, this, &ASokobanCharacter::OnMoveReleased);
+        }
         if (MoveDownAction)
+        {
             EnhancedInput->BindAction(MoveDownAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveDown);
+            EnhancedInput->BindAction(MoveDownAction, ETriggerEvent::Completed, this, &ASokobanCharacter::OnMoveReleased);
+        }
         if (MoveLeftAction)
+        {
             EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveLeft);
+            EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Completed, this, &ASokobanCharacter::OnMoveReleased);
+        }
         if (MoveRightAction)
+        {
             EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveRight);
+            EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Completed, this, &ASokobanCharacter::OnMoveReleased);
+        }
+
         if (UndoAction)
             EnhancedInput->BindAction(UndoAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnUndo);
     }
@@ -102,6 +116,8 @@ void ASokobanCharacter::Tick(float DeltaTime)
     Super::Tick(DeltaTime);
 
     if (!bIsMoving) return;
+
+    bool bJustFinished = false;
 
     if (bIsSliding)
     {
@@ -117,6 +133,7 @@ void ASokobanCharacter::Tick(float DeltaTime)
             bIsMoving = false;
             bIsSliding = false;
             GetCharacterMovement()->StopMovementImmediately();
+            bJustFinished = true;
         }
     }
     else
@@ -132,6 +149,7 @@ void ASokobanCharacter::Tick(float DeltaTime)
             SetActorLocation(SnapPos);
             bIsMoving = false;
             GetCharacterMovement()->StopMovementImmediately();
+            bJustFinished = true;
         }
         else
         {
@@ -139,31 +157,27 @@ void ASokobanCharacter::Tick(float DeltaTime)
             AddMovementInput(MoveDirection, 1.0f);
         }
     }
+
+    // 移动刚结束且方向键仍被按住 → 立刻开始下一步，不等下一帧回调
+    if (bJustFinished && bHoldingDirection)
+    {
+        OnMoveInput(HeldDirection);
+    }
 }
 
 void ASokobanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-    if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-    {
-        if (MoveUpAction)
-            EnhancedInput->BindAction(MoveUpAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveUp);
-        if (MoveDownAction)
-            EnhancedInput->BindAction(MoveDownAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveDown);
-        if (MoveLeftAction)
-            EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveLeft);
-        if (MoveRightAction)
-            EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnMoveRight);
-        if (UndoAction)
-            EnhancedInput->BindAction(UndoAction, ETriggerEvent::Started, this, &ASokobanCharacter::OnUndo);
-    }
+    // Input bindings are done in BeginPlay to ensure BP properties are deserialized.
+    // Do NOT bind here to avoid duplicate callbacks.
 }
 
-void ASokobanCharacter::OnMoveUp(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Up); }
-void ASokobanCharacter::OnMoveDown(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Down); }
-void ASokobanCharacter::OnMoveLeft(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Left); }
-void ASokobanCharacter::OnMoveRight(const FInputActionValue& Value) { OnMoveInput(EMoveDirection::Right); }
+void ASokobanCharacter::OnMoveUp(const FInputActionValue& Value) { bHoldingDirection = true; HeldDirection = EMoveDirection::Up; OnMoveInput(EMoveDirection::Up); }
+void ASokobanCharacter::OnMoveDown(const FInputActionValue& Value) { bHoldingDirection = true; HeldDirection = EMoveDirection::Down; OnMoveInput(EMoveDirection::Down); }
+void ASokobanCharacter::OnMoveLeft(const FInputActionValue& Value) { bHoldingDirection = true; HeldDirection = EMoveDirection::Left; OnMoveInput(EMoveDirection::Left); }
+void ASokobanCharacter::OnMoveRight(const FInputActionValue& Value) { bHoldingDirection = true; HeldDirection = EMoveDirection::Right; OnMoveInput(EMoveDirection::Right); }
+
+void ASokobanCharacter::OnMoveReleased(const FInputActionValue& Value) { bHoldingDirection = false; }
 
 void ASokobanCharacter::OnUndo(const FInputActionValue& Value)
 {

@@ -10,7 +10,8 @@ Source/TuiXiangZi/
 ├── Framework/       # GameInstance, GameMode, GameState, SaveGame
 ├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileActor
 ├── Gameplay/        # SokobanCharacter, PushableBoxComponent, GroupColorIndicatorComponent
-│   └── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal, Teleporter
+│   ├── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal, Teleporter
+│   └── Modifiers/   # TileModifierComponent (base), IceTileModifier
 ├── LevelData/       # LevelDataTypes, LevelSerializer (JSON)
 ├── Editor/          # LevelEditorGameMode, EditorOverlayManager, LevelEditorPawn, BrushTypes
 │   └── Overlays/    # GridLineOverlay, CoordinateLabelOverlay, TeleporterArrowOverlay
@@ -34,12 +35,12 @@ Source/TuiXiangZi/
 
 ### 3. Framework (`Framework/`)
 - **SokobanGameInstance** — Level selection state (Preset/Custom/Editor), progression tracking, level discovery.
-- **SokobanGameMode** — Gameplay orchestration: level loading, undo, step counting, win detection.
-- **SokobanGameState** — Runtime state: step counter, completion flag, undo snapshot stack (`TArray<FLevelSnapshot>`).
+- **SokobanGameMode** — Gameplay orchestration: level loading, win detection, box-on-plate visual updates.
+- **SokobanGameState** — Runtime state: step counter, completion flag, undo snapshot stack (`TArray<FLevelSnapshot>`). Owns `CaptureSnapshot`, `PushSnapshot`, `PopSnapshot`, `IncrementSteps`.
 - **SokobanSaveGame** — Persistence: completed levels, highest unlocked index.
 
 ### 4. Gameplay (`Gameplay/`)
-- **SokobanCharacter** — Grid-based 4-direction movement, Enhanced Input, timeline animation (0.15s), top-down camera.
+- **SokobanCharacter** — Grid-based 4-direction movement, Enhanced Input (`Started` + `Completed`), CMC-driven walk animation (0.15s), hold-to-repeat continuous movement (chains next move on animation completion via `bHoldingDirection` flag), top-down camera.
 - **PushableBoxComponent** — Box push/fall logic, plate feedback, material instance dynamics.
 - **GroupColorIndicatorComponent** — Blueprintable group color display. BP subclasses override `OnUpdateVisual` for custom visuals. Auto-notified by GridManager and GridMechanismComponent.
 - **Mechanisms** (component-based, attached to TileActor):
@@ -63,9 +64,9 @@ Source/TuiXiangZi/
 - **LevelEditorPawn** — Editor input handling, dialog management.
 
 ### 7. Tutorial (`Tutorial/`)
-- **TutorialTypes** — Enums and structs for tutorial conditions/steps.
+- **TutorialTypes** — Enums and structs for tutorial conditions/steps. 5 condition types: `None`, `Immediate`, `AfterSteps`, `OnGridPosition`, `OnGameplayEvent`. All game events matched via `OnGameplayEvent` + tag name.
 - **TutorialDataAsset** — Per-level tutorial configs (gameplay + editor).
-- **TutorialSubsystem** (`UWorldSubsystem`) — Tutorial flow management. Subscribes to `UGameEventBus` events in `OnWorldBeginPlay`. Supports gameplay and editor contexts via unified `FTutorialCondition` model.
+- **TutorialSubsystem** (`UWorldSubsystem`) — Tutorial flow management. Subscribes to all `UGameEventBus` events in `OnWorldBeginPlay`. Supports gameplay and editor contexts via unified `FTutorialCondition` model.
 
 ### 8. UI (`UI/`)
 - **Menu**: MainMenuWidget, PresetLevelSelectWidget, CustomLevelSelectWidget.
@@ -76,10 +77,14 @@ Source/TuiXiangZi/
 
 ### Gameplay Move
 ```
-Player Input → SokobanCharacter::OnMoveInput → GridManager::TryMoveActor
-→ Validate (IsCellPassable, CanPushBoxTo) → Update occupancy → Broadcast OnActorLogicalMoved
-→ Animate (Timeline) → CaptureSnapshot (undo) → IncrementSteps → CheckGoalCondition
+Player Input (Started) → SokobanCharacter::OnMoveInput (set bHoldingDirection)
+→ CaptureSnapshot (undo, before move) → GridManager::TryMoveActor
+→ Validate (IsCellPassable, CanPushBoxTo) → Update occupancy → Broadcast Grid.ActorMoved
 → (if on Teleporter) CheckTeleporters → Broadcast Teleported → SnapToGridPos
+→ Animate (CMC walk) → IncrementSteps → CheckGoalCondition
+→ (if move failed) PopSnapshot (rollback)
+→ Tick: on animation finish, if bHoldingDirection → chain OnMoveInput(HeldDirection)
+→ Player Release (Completed) → bHoldingDirection = false
 ```
 
 ### Level Load

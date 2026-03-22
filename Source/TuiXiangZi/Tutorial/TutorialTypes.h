@@ -10,20 +10,18 @@ UENUM(BlueprintType)
 enum class ETutorialConditionType : uint8
 {
 	// --- General ---
-	None,            // Completion: manual click to advance. Trigger: should not be used.
-	Immediate,       // Trigger: LevelStart / AfterPrevious. Completion: not used.
+	// Completion: manual click to advance. Trigger: should not be used.
+	None,            
+	// Trigger: LevelStart / AfterPrevious. Completion: not used.
+	Immediate,       
 
 	// --- Parameterized ---
-	AfterSteps,      // After N player steps
-	OnGridPosition,  // Player reaches a specific grid position
-	OnGameplayEvent, // Named gameplay event (generic extension point)
-
-	// --- Action-based ---
-	OnPlayerMove,    // Player successfully moved
-	OnPushBox,       // Player pushed a box
-	OnUndo,          // Player performed undo
-	OnReset,         // Player reset the level
-	OnDoorOpened,    // A door was opened
+	// After N player steps (checks StepCount >= N)
+	AfterSteps,      
+	// Player reaches a specific grid position (checks PlayerPos == GridPos)
+	OnGridPosition,  
+	// Match any GameEventBus event by tag name (e.g. "Player.Moved", "Mechanism.DoorOpened")
+	OnGameplayEvent, 
 };
 
 // Unified condition config

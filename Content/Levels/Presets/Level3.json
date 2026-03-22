@@ -230,8 +230,8 @@
 		},
 		{
 			"gridPos": [ 1, 6 ],
-			"cellType": "Goal",
-			"visualStyleId": "GoalBasic"
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
 		},
 		{
 			"gridPos": [ 2, 6 ],
@@ -270,8 +270,8 @@
 		},
 		{
 			"gridPos": [ 1, 7 ],
-			"cellType": "Wall",
-			"visualStyleId": "WallBasic"
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
 		},
 		{
 			"gridPos": [ 2, 7 ],
@@ -302,8 +302,451 @@
 			"gridPos": [ 7, 7 ],
 			"cellType": "Wall",
 			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 8 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 8 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 2, 8 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 8 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 4, 8 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 5, 8 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 6, 8 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 7, 8 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 9 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 9 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 2, 9 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 9 ],
+			"cellType": "Box",
+			"visualStyleId": "BoxBasic"
+		},
+		{
+			"gridPos": [ 4, 9 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 5, 9 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 6, 9 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 7, 9 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 10 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 10 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 2, 10 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 10 ],
+			"cellType": "Teleporter",
+			"visualStyleId": "Pressure2",
+			"groupId": 2
+		},
+		{
+			"gridPos": [ 4, 10 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 5, 10 ],
+			"cellType": "Teleporter",
+			"visualStyleId": "Teleporter1",
+			"groupId": 1
+		},
+		{
+			"gridPos": [ 6, 10 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 7, 10 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 2, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 3, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 4, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 5, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 6, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 7, 11 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 2, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 3, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 4, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 5, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 6, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 7, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 8, 14 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 15 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 15 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 2, 15 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 15 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 4, 15 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 5, 15 ],
+			"cellType": "Floor"
+		},
+		{
+			"gridPos": [ 6, 15 ],
+			"cellType": "Floor"
+		},
+		{
+			"gridPos": [ 7, 15 ],
+			"cellType": "Floor"
+		},
+		{
+			"gridPos": [ 8, 15 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 16 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 2, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 4, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 5, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 6, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 7, 16 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 8, 16 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 17 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 17 ],
+			"cellType": "Goal",
+			"visualStyleId": "GoalBasic"
+		},
+		{
+			"gridPos": [ 2, 17 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 17 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 4, 17 ],
+			"cellType": "Teleporter",
+			"visualStyleId": "Pressure2",
+			"groupId": 2
+		},
+		{
+			"gridPos": [ 5, 17 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 6, 17 ],
+			"cellType": "Teleporter",
+			"visualStyleId": "Pressure2",
+			"groupId": 1
+		},
+		{
+			"gridPos": [ 7, 17 ],
+			"cellType": "Floor"
+		},
+		{
+			"gridPos": [ 8, 17 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 18 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 2, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 3, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 4, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 5, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 6, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 7, 18 ],
+			"cellType": "Floor",
+			"visualStyleId": "Floor2"
+		},
+		{
+			"gridPos": [ 8, 18 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 0, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 1, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 2, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 3, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 4, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 5, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 6, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 7, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
+		},
+		{
+			"gridPos": [ 8, 19 ],
+			"cellType": "Wall",
+			"visualStyleId": "WallBasic"
 		}
 	],
 	"playerStart": [ 1, 1 ],
-	"groupStyles": []
+	"groupStyles": [
+		{
+			"groupId": 1,
+			"displayName": "Group 1",
+			"baseColor": [ 0.80000001192092896, 0.20000000298023224, 0.20000000298023224 ],
+			"activeColor": [ 1.0399999618530273, 0.25999999046325684, 0.25999999046325684 ]
+		},
+		{
+			"groupId": 2,
+			"displayName": "Group 2",
+			"baseColor": [ 0.20000000298023224, 0.30000001192092896, 0.80000001192092896 ],
+			"activeColor": [ 0.25999999046325684, 0.39000001549720764, 1.0399999618530273 ]
+		}
+	]
 }

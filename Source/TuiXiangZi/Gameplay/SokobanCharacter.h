@@ -65,8 +65,13 @@ protected:
     void OnMoveDown(const struct FInputActionValue& Value);
     void OnMoveLeft(const struct FInputActionValue& Value);
     void OnMoveRight(const struct FInputActionValue& Value);
+    void OnMoveReleased(const struct FInputActionValue& Value);
     void OnMoveInput(EMoveDirection Dir);
     void OnUndo(const struct FInputActionValue& Value);
+
+    // ===== 持续移动 =====
+    EMoveDirection HeldDirection = EMoveDirection::Up;
+    bool bHoldingDirection = false;
 
     // ===== 网格移动 =====
     FVector MoveStartLocation;

@@ -38,18 +38,20 @@ Source/TuiXiangZi/
 
 ```cpp
 // 广播方：一行代码，不关心谁在监听
-EventBus->Broadcast(GameEventTags::Player::Moved, FGameEventPayload::FromActor(this, NewPos));
+EventBus->Broadcast(GameEventTags::PlayerMoved, FGameEventPayload::MakeGridPos(NewPos));
 
 // 订阅方：按标签注册回调
-EventBus->Subscribe(GameEventTags::Player::Moved, FOnGameEvent::CreateUObject(this, &ThisClass::OnPlayerMoved));
+EventBus->Subscribe(GameEventTags::PlayerMoved, FOnGameEvent::FDelegate::CreateUObject(this, &ThisClass::OnPlayerMoved));
 ```
 
 **GameEventPayload**：通用载荷结构体，包含 Actor、GridPos、FromPos、ToPos、IntParam、FloatParam 字段和工厂方法（MakeActorMoved, MakeGridPos, MakeGridBounds 等）。
 
 **GameEventTags**：`inline const FName` 常量命名空间，覆盖所有事件标签：
 - `Grid.*`：网格状态变化（ActorMoved, PlayerEnteredGoal, PitFilled）
-- `Player.*`：玩家操作（Moved, PushedBox, Undid, Reset）
-- `Editor.*`：编辑器操作（CellPainted, BrushChanged, LevelSaved, GridBoundsChanged, TeleporterDirectionChanged）
+- `Game.*`：游戏状态（StepCountChanged, LevelCompleted）
+- `Player.*`：玩家操作（Moved, PushedBox, Undone, Reset）
+- `Mechanism.*`：机制事件（DoorOpened, Teleported）
+- `Editor.*`：编辑器操作（BrushChanged, CellPainted, CellErased, GroupCreated, ModeChanged, NewLevel, LevelSaved, LevelLoaded, LevelTested, GridBoundsChanged, TeleporterDirectionChanged）
 
 ### 2. 网格系统（Grid/）
 
@@ -91,12 +93,12 @@ struct FCellTypeDescriptor {
 - 关卡文件发现
 
 **SokobanGameMode**：
-- 游玩编排：关卡加载、撤销、步数计数、胜利检测
+- 游玩编排：关卡加载、胜利检测、箱子压板视觉更新
 - 通过 GridManager 驱动所有游玩逻辑
 
 **SokobanGameState**：
 - 运行时状态：步数计数器、通关标记
-- 撤销快照栈：`TArray<FLevelSnapshot>`
+- 撤销快照栈：`TArray<FLevelSnapshot>`，提供 `CaptureSnapshot`、`PushSnapshot`、`PopSnapshot`、`IncrementSteps` 方法
 
 **SokobanSaveGame**：
 - 持久化：已通关关卡集合、最高解锁索引
@@ -104,8 +106,10 @@ struct FCellTypeDescriptor {
 ### 4. 游玩层（Gameplay/）
 
 **SokobanCharacter**：
-- 网格 4 方向移动，Enhanced Input 驱动
-- Timeline 动画插值（0.15s 时长）
+- 网格 4 方向移动，Enhanced Input 驱动（`Started` 触发移动，`Completed` 检测松键）
+- CMC 驱动行走动画（0.15s 时长），冰面滑行使用独立插值
+- 按住方向键持续移动：Tick 中检测动画结束 + `bHoldingDirection` 标志，立即链式触发下一步，零间隔衔接
+- 输入绑定仅在 `BeginPlay` 中执行（`SetupPlayerInputComponent` 留空），避免重复绑定导致的操作翻倍
 - 俯视角相机
 
 **PushableBoxComponent**：
@@ -172,15 +176,16 @@ GridManager 在移动逻辑中自动检查目标格子的 Modifier，如果 `Sho
 ```cpp
 struct FLevelData {
     TArray<FCellData>                Cells;          // 所有格子数据
-    FIntPoint                        PlayerStartPos; // 玩家出生点
+    FIntPoint                        PlayerStart;    // 玩家出生点
     TArray<FMechanismGroupStyleData> GroupStyles;     // 分组颜色配置
 };
 
 struct FCellData {
-    FIntPoint     Position;
-    EGridCellType CellType;
-    int32         GroupId;     // 机关分组 ID
-    int32         ExtraParam;  // 扩展参数（传送阵方向等）
+    FIntPoint     GridPos;        // 网格坐标
+    FString       CellType;      // 地块类型（字符串，用于 JSON 序列化）
+    FName         VisualStyleId;  // 视觉样式标识
+    int32         GroupId;        // 机关分组 ID
+    int32         ExtraParam;     // 扩展参数（传送阵方向等）
 };
 ```
 
@@ -216,7 +221,7 @@ struct FBrushDescriptor {
 |-------------|---------|---------|-----------|
 | `GridLineOverlay` | DrawDebugLine | `Editor.GridBoundsChanged` | 是 |
 | `CoordinateLabelOverlay` | TextRenderActor | `Editor.GridBoundsChanged` | 是 |
-| `TeleporterArrowOverlay` | DrawDebugLine | `Editor.CellPainted/Erased/NewLevel/LevelLoaded/TeleporterDirectionChanged` | 否（始终可见） |
+| `TeleporterArrowOverlay` | DrawDebugLine | `Editor.CellPainted/CellErased/NewLevel/LevelLoaded/TeleporterDirectionChanged/GridBoundsChanged` | 否（始终可见） |
 
 新增 overlay 只需继承 `UEditorOverlayComponent`、订阅需要的事件，不改 Manager 也不改 GameMode。
 
@@ -225,12 +230,12 @@ struct FBrushDescriptor {
 ### 7. 教程系统（Tutorial/）
 
 **TutorialSubsystem**（`UWorldSubsystem`）：
-- 在 `OnWorldBeginPlay` 中订阅 GameEventBus 事件
-- 收到事件后自动映射到 `ETutorialConditionType` 进行条件匹配
+- 在 `OnWorldBeginPlay` 中订阅所有 GameEventBus 事件
+- 收到事件后进行条件匹配：`OnGameplayEvent` 按事件标签名匹配，`AfterSteps` 和 `OnGridPosition` 有专用参数逻辑
 - 支持游玩和编辑器两种上下文，通过 `bIsEditorTutorial` 区分
 - 不持有游戏逻辑引用，可完全移除不影响游戏
 
-**条件模型**：触发条件和完成条件共用 `FTutorialCondition` 结构体 + `ETutorialConditionType` 枚举。
+**条件模型**：触发条件和完成条件共用 `FTutorialCondition` 结构体。条件类型只有 5 种：`None`（手动推进）、`Immediate`（立即）、`AfterSteps`（步数阈值）、`OnGridPosition`（到达坐标）、`OnGameplayEvent`（匹配任意事件标签）。所有游戏事件（移动、推箱子、开门、传送等）统一通过 `OnGameplayEvent` + 事件标签名匹配，无需为每种事件定义专用枚举值。
 
 **数据配置**：`TutorialDataAsset` 按关卡索引存储教程步骤，在 UE 编辑器中直接编辑。
 
@@ -251,15 +256,20 @@ struct FBrushDescriptor {
 ### 游玩移动
 
 ```
-玩家输入 → SokobanCharacter::OnMoveInput
+玩家按下方向键（Started）→ 设置 bHoldingDirection + HeldDirection
+  → SokobanCharacter::OnMoveInput
+  → GameState::CaptureSnapshot（撤销栈，移动前压入快照）
   → GridManager::TryMoveActor
     → 校验：IsCellPassable + CanPushBoxTo + 门阻挡检查
     → 更新占位关系
     → 检查 Modifier：ShouldContinueMovement → 计算滑行终点
-    → 广播 OnActorLogicalMoved（GameEventBus）
-  → Timeline 动画插值
-  → GameState::CaptureSnapshot（撤销栈）
+    → 广播 Grid.ActorMoved（GameEventBus）
+    → PostMoveSettlement：检查压力板分组 → CheckTeleporters（仅本回合移动的 Actor）
+  → CMC 驱动行走动画 → 广播 Teleported（如有传送）→ SnapToGridPos
   → IncrementSteps → CheckGoalCondition
+  → （移动失败时）PopSnapshot（回滚快照）
+  → Tick 检测动画结束：若 bHoldingDirection 仍为 true → 立刻链式调用 OnMoveInput(HeldDirection)
+  → 玩家松开方向键（Completed）→ bHoldingDirection = false
 ```
 
 ### 关卡加载

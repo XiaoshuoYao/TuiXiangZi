@@ -20,21 +20,15 @@ static bool DoesConditionMatch(const FTutorialCondition& Cond, ETutorialConditio
 	case ETutorialConditionType::OnGameplayEvent:
 		return EventTag == Cond.EventTag;
 	default:
-		// Action-based types (OnPlayerMove, OnPushBox, etc.) match by type alone
 		return true;
 	}
 }
 
 // ---- Map EventBus tag to ETutorialConditionType ----
+// Only special-logic conditions get dedicated types; everything else is OnGameplayEvent.
 static ETutorialConditionType EventTagToConditionType(FName Tag)
 {
-	if (Tag == GameEventTags::PlayerMoved)    return ETutorialConditionType::OnPlayerMove;
-	if (Tag == GameEventTags::PushedBox)      return ETutorialConditionType::OnPushBox;
-	if (Tag == GameEventTags::Undone)         return ETutorialConditionType::OnUndo;
-	if (Tag == GameEventTags::Reset)          return ETutorialConditionType::OnReset;
-	if (Tag == GameEventTags::DoorOpened)     return ETutorialConditionType::OnDoorOpened;
 	if (Tag == GameEventTags::StepCountChanged) return ETutorialConditionType::AfterSteps;
-	// Editor.* and other tags → OnGameplayEvent
 	return ETutorialConditionType::OnGameplayEvent;
 }
 
@@ -47,20 +41,23 @@ void UTutorialSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	UGameEventBus* EventBus = InWorld.GetSubsystem<UGameEventBus>();
 	if (!EventBus) return;
 
+	// Subscribe to all known event tags so any can be used in tutorial conditions
 	auto Sub = [&](FName Tag)
 	{
 		EventBus->Subscribe(Tag, FOnGameEvent::FDelegate::CreateUObject(this, &UTutorialSubsystem::OnGameEvent));
 	};
 
-	// Gameplay events
+	Sub(GameEventTags::ActorMoved);
+	Sub(GameEventTags::PlayerEnteredGoal);
+	Sub(GameEventTags::PitFilled);
+	Sub(GameEventTags::StepCountChanged);
+	Sub(GameEventTags::LevelCompleted);
 	Sub(GameEventTags::PlayerMoved);
 	Sub(GameEventTags::PushedBox);
 	Sub(GameEventTags::Undone);
 	Sub(GameEventTags::Reset);
 	Sub(GameEventTags::DoorOpened);
-	Sub(GameEventTags::StepCountChanged);
-
-	// Editor events
+	Sub(GameEventTags::Teleported);
 	Sub(GameEventTags::EditorBrushChanged);
 	Sub(GameEventTags::EditorCellPainted);
 	Sub(GameEventTags::EditorCellErased);
@@ -70,6 +67,8 @@ void UTutorialSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	Sub(GameEventTags::EditorLevelSaved);
 	Sub(GameEventTags::EditorLevelLoaded);
 	Sub(GameEventTags::EditorLevelTested);
+	Sub(GameEventTags::EditorGridBoundsChanged);
+	Sub(GameEventTags::EditorTeleporterDirectionChanged);
 }
 
 void UTutorialSubsystem::OnGameEvent(FName EventTag, const FGameEventPayload& Payload)
@@ -86,6 +85,9 @@ void UTutorialSubsystem::OnGameEvent(FName EventTag, const FGameEventPayload& Pa
 
 	if (!IsTutorialActive() || bPaused) return;
 
+	// Record event for retroactive completion checks
+	FiredEventTags.Add(EventTag);
+
 	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
 	ETutorialConditionType CondType = EventTagToConditionType(EventTag);
 
@@ -94,27 +96,29 @@ void UTutorialSubsystem::OnGameEvent(FName EventTag, const FGameEventPayload& Pa
 	{
 		if (bWaitingForTrigger)
 		{
-			TryMatchTrigger(Step.Trigger, ETutorialConditionType::OnPlayerMove, CachedStepCount, CachedPlayerPos, NAME_None);
 			TryMatchTrigger(Step.Trigger, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
 		}
 		else
 		{
-			TryMatchCompletion(Step.Completion, ETutorialConditionType::OnPlayerMove, CachedStepCount, CachedPlayerPos, NAME_None);
 			TryMatchCompletion(Step.Completion, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
 		}
-		return;
+		// Fall through to also try OnGameplayEvent match for "Player.Moved"
 	}
 
-	// Determine EventTag parameter for OnGameplayEvent conditions
-	FName CondEventTag = (CondType == ETutorialConditionType::OnGameplayEvent) ? EventTag : NAME_None;
-
+	// All events (including Player.Moved) try OnGameplayEvent and AfterSteps match
 	if (bWaitingForTrigger)
 	{
-		TryMatchTrigger(Step.Trigger, CondType, CachedStepCount, CachedPlayerPos, CondEventTag);
+		TryMatchTrigger(Step.Trigger, CondType, CachedStepCount, CachedPlayerPos, EventTag);
 	}
 	else
 	{
-		TryMatchCompletion(Step.Completion, CondType, CachedStepCount, CachedPlayerPos, CondEventTag);
+		TryMatchCompletion(Step.Completion, CondType, CachedStepCount, CachedPlayerPos, EventTag);
+	}
+
+	// Scan all future steps for trigger pre-satisfaction (regardless of current state)
+	if (IsTutorialActive())
+	{
+		RecordFutureTriggers(CondType, EventTag);
 	}
 }
 
@@ -187,7 +191,8 @@ void UTutorialSubsystem::AdvanceTutorial()
 	if (!IsTutorialActive() || bPaused) return;
 
 	const FTutorialStep& Step = ActiveTutorial->Steps[CurrentStepIndex];
-	if (Step.Completion.Type == ETutorialConditionType::None)
+	// Allow manual advance if completion is None OR if it was already satisfied (overridden to manual)
+	if (Step.Completion.Type == ETutorialConditionType::None || IsConditionAlreadySatisfied(Step.Completion))
 	{
 		TryAdvanceToNextStep();
 	}
@@ -226,6 +231,8 @@ void UTutorialSubsystem::DismissTutorial()
 	bWaitingForTrigger = false;
 	bPendingShow = false;
 	bIsEditorTutorial = false;
+	PreSatisfiedTriggers.Empty();
+	FiredEventTags.Empty();
 }
 
 bool UTutorialSubsystem::IsTutorialActive() const
@@ -269,7 +276,10 @@ void UTutorialSubsystem::ShowCurrentStep()
 	TutorialWidget->SetTutorialText(Step.TutorialText);
 
 	bool bIsLastStep = (CurrentStepIndex == ActiveTutorial->Steps.Num() - 1);
-	bool bManualAdvance = (Step.Completion.Type == ETutorialConditionType::None);
+	// If the completion condition is already satisfied, fall back to manual advance
+	// so the player still sees the step and clicks "Next"
+	bool bManualAdvance = (Step.Completion.Type == ETutorialConditionType::None)
+		|| IsConditionAlreadySatisfied(Step.Completion);
 
 	if (bManualAdvance)
 	{
@@ -327,9 +337,12 @@ void UTutorialSubsystem::TryAdvanceToNextStep()
 		bWaitingForTrigger = false;
 		ShowCurrentStep();
 	}
-	else if (DoesConditionMatch(NextStep.Trigger, NextStep.Trigger.Type, CachedStepCount, CachedPlayerPos, NAME_None))
+	else if (PreSatisfiedTriggers.Contains(CurrentStepIndex) ||
+		IsConditionAlreadySatisfied(NextStep.Trigger))
 	{
-		// Parameterized conditions that may already be satisfied (e.g., already at position)
+		// Trigger was pre-satisfied (event fired while earlier step was displayed),
+		// or parameterized condition is already met against cached state
+		PreSatisfiedTriggers.Remove(CurrentStepIndex);
 		bWaitingForTrigger = false;
 		ShowCurrentStep();
 	}
@@ -360,6 +373,43 @@ void UTutorialSubsystem::TryMatchCompletion(const FTutorialCondition& Condition,
 	if (DoesConditionMatch(Condition, InType, StepCount, PlayerPos, EventTag))
 	{
 		TryAdvanceToNextStep();
+	}
+}
+
+bool UTutorialSubsystem::IsConditionAlreadySatisfied(const FTutorialCondition& Condition) const
+{
+	switch (Condition.Type)
+	{
+	case ETutorialConditionType::AfterSteps:
+		return CachedStepCount >= Condition.StepCount;
+	case ETutorialConditionType::OnGridPosition:
+		return CachedPlayerPos == Condition.GridPos;
+	case ETutorialConditionType::OnGameplayEvent:
+		return FiredEventTags.Contains(Condition.EventTag);
+	default:
+		return false;
+	}
+}
+
+void UTutorialSubsystem::RecordFutureTriggers(ETutorialConditionType CondType, FName EventTag)
+{
+	for (int32 i = CurrentStepIndex + 1; i < ActiveTutorial->Steps.Num(); i++)
+	{
+		if (PreSatisfiedTriggers.Contains(i)) continue;
+
+		const FTutorialCondition& Trigger = ActiveTutorial->Steps[i].Trigger;
+		if (DoesConditionMatch(Trigger, CondType, CachedStepCount, CachedPlayerPos, EventTag))
+		{
+			PreSatisfiedTriggers.Add(i);
+		}
+		// For Player.Moved, also check OnGridPosition triggers
+		if (EventTag == GameEventTags::PlayerMoved && !PreSatisfiedTriggers.Contains(i))
+		{
+			if (DoesConditionMatch(Trigger, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None))
+			{
+				PreSatisfiedTriggers.Add(i);
+			}
+		}
 	}
 }
 

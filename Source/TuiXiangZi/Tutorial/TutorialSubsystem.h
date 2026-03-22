@@ -55,9 +55,21 @@ private:
 	bool bPaused = false;
 	bool bPendingShow = false;
 
+	// Queue: future step indices whose triggers have already been satisfied
+	TSet<int32> PreSatisfiedTriggers;
+
+	// All event tags fired during this tutorial session (for retroactive condition checks)
+	TSet<FName> FiredEventTags;
+
 	void ShowCurrentStep();
 	void HideWidget();
 	void TryAdvanceToNextStep();
+
+	// Check if a condition is already satisfied against cached/historical state
+	bool IsConditionAlreadySatisfied(const FTutorialCondition& Condition) const;
+
+	// Scan future steps and record any whose triggers match the current event
+	void RecordFutureTriggers(ETutorialConditionType CondType, FName EventTag);
 
 	// Try to satisfy the current step's trigger or completion
 	void TryMatchTrigger(const FTutorialCondition& Condition, ETutorialConditionType InType, int32 StepCount, FIntPoint PlayerPos, FName EventTag);
