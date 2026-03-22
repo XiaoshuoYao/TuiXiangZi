@@ -21,6 +21,15 @@ void UGroupEntryWidget::NativeConstruct()
 	{
 		DeleteButton->OnClicked.AddDynamic(this, &UGroupEntryWidget::HandleDeleteClicked);
 	}
+	if (DirectionButton)
+	{
+		DirectionButton->OnClicked.AddDynamic(this, &UGroupEntryWidget::HandleDirectionCycleClicked);
+		DirectionButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (DirectionText)
+	{
+		DirectionText->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGroupEntryWidget::Setup(int32 InGroupId, const FText& InDisplayName, FLinearColor InBaseColor)
@@ -83,6 +92,35 @@ void UGroupEntryWidget::SetInteractionEnabled(bool bEnabled)
 	{
 		DeleteButton->SetIsEnabled(bEnabled);
 	}
+	if (DirectionButton)
+	{
+		DirectionButton->SetIsEnabled(bEnabled);
+	}
+}
+
+void UGroupEntryWidget::SetDirectionInfo(const FString& DirText)
+{
+	if (DirectionButton)
+	{
+		DirectionButton->SetVisibility(ESlateVisibility::Visible);
+	}
+	if (DirectionText)
+	{
+		DirectionText->SetVisibility(ESlateVisibility::Visible);
+		DirectionText->SetText(FText::FromString(DirText));
+	}
+}
+
+void UGroupEntryWidget::HideDirectionInfo()
+{
+	if (DirectionButton)
+	{
+		DirectionButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (DirectionText)
+	{
+		DirectionText->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGroupEntryWidget::HandleRowClicked()
@@ -98,6 +136,11 @@ void UGroupEntryWidget::HandleColorEditClicked()
 void UGroupEntryWidget::HandleDeleteClicked()
 {
 	OnDeleteClicked.Broadcast(GroupId);
+}
+
+void UGroupEntryWidget::HandleDirectionCycleClicked()
+{
+	OnDirectionCycleClicked.Broadcast(GroupId);
 }
 
 void UGroupEntryWidget::HandleRowHovered()

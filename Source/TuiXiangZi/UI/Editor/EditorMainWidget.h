@@ -176,6 +176,9 @@ protected:
 	UFUNCTION()
 	void HandleGroupMgrDeleteGroup(int32 GroupId);
 
+	UFUNCTION()
+	void HandleGroupMgrDirectionCycle(int32 GroupId);
+
 	// ============================================================
 	// Dialog management
 	// ============================================================

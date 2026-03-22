@@ -92,24 +92,9 @@ protected:
 	void RefreshVariantPanel(EEditorBrush Brush);
 	void SelectVariant(FName StyleId);
 
+	/** Single handler for all brush buttons — identifies source via IsHovered(). */
 	UFUNCTION()
-	void HandleBrushButton0();
-	UFUNCTION()
-	void HandleBrushButton1();
-	UFUNCTION()
-	void HandleBrushButton2();
-	UFUNCTION()
-	void HandleBrushButton3();
-	UFUNCTION()
-	void HandleBrushButton4();
-	UFUNCTION()
-	void HandleBrushButton5();
-	UFUNCTION()
-	void HandleBrushButton6();
-	UFUNCTION()
-	void HandleBrushButton7();
-	UFUNCTION()
-	void HandleBrushButton8();
+	void HandleAnyBrushButtonClicked();
 
 	void HandleBrushButtonClicked(EEditorBrush Brush);
 

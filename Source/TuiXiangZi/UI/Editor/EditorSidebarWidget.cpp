@@ -141,30 +141,33 @@ void UEditorSidebarWidget::CreateBrushButtons()
 		BrushOrder.Add(Cfg.Brush);
 	}
 
-	// Bind click handlers individually (AddDynamic macro requires literal function name)
-	if (BrushButtons.Num() > 0 && BrushButtons[0]) BrushButtons[0]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton0);
-	if (BrushButtons.Num() > 1 && BrushButtons[1]) BrushButtons[1]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton1);
-	if (BrushButtons.Num() > 2 && BrushButtons[2]) BrushButtons[2]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton2);
-	if (BrushButtons.Num() > 3 && BrushButtons[3]) BrushButtons[3]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton3);
-	if (BrushButtons.Num() > 4 && BrushButtons[4]) BrushButtons[4]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton4);
-	if (BrushButtons.Num() > 5 && BrushButtons[5]) BrushButtons[5]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton5);
-	if (BrushButtons.Num() > 6 && BrushButtons[6]) BrushButtons[6]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton6);
-	if (BrushButtons.Num() > 7 && BrushButtons[7]) BrushButtons[7]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton7);
-	if (BrushButtons.Num() > 8 && BrushButtons[8]) BrushButtons[8]->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleBrushButton8);
+	// Bind all brush buttons to the same handler — source identified via IsHovered()
+	for (UButton* Btn : BrushButtons)
+	{
+		if (Btn)
+		{
+			Btn->OnClicked.AddDynamic(this, &UEditorSidebarWidget::HandleAnyBrushButtonClicked);
+		}
+	}
 }
 
 // ============================================================
-// Per-button click handlers (UE requires parameterless UFUNCTION for OnClicked)
+// Brush click handler — identifies source via IsHovered()
 // ============================================================
-void UEditorSidebarWidget::HandleBrushButton0() { HandleBrushButtonClicked(GetBrushConfigs()[0].Brush); }
-void UEditorSidebarWidget::HandleBrushButton1() { HandleBrushButtonClicked(GetBrushConfigs()[1].Brush); }
-void UEditorSidebarWidget::HandleBrushButton2() { HandleBrushButtonClicked(GetBrushConfigs()[2].Brush); }
-void UEditorSidebarWidget::HandleBrushButton3() { HandleBrushButtonClicked(GetBrushConfigs()[3].Brush); }
-void UEditorSidebarWidget::HandleBrushButton4() { HandleBrushButtonClicked(GetBrushConfigs()[4].Brush); }
-void UEditorSidebarWidget::HandleBrushButton5() { HandleBrushButtonClicked(GetBrushConfigs()[5].Brush); }
-void UEditorSidebarWidget::HandleBrushButton6() { HandleBrushButtonClicked(GetBrushConfigs()[6].Brush); }
-void UEditorSidebarWidget::HandleBrushButton7() { HandleBrushButtonClicked(GetBrushConfigs()[7].Brush); }
-void UEditorSidebarWidget::HandleBrushButton8() { HandleBrushButtonClicked(GetBrushConfigs()[8].Brush); }
+void UEditorSidebarWidget::HandleAnyBrushButtonClicked()
+{
+	for (int32 i = 0; i < BrushButtons.Num(); ++i)
+	{
+		if (BrushButtons[i] && BrushButtons[i]->IsHovered())
+		{
+			if (BrushOrder.IsValidIndex(i))
+			{
+				HandleBrushButtonClicked(BrushOrder[i]);
+			}
+			return;
+		}
+	}
+}
 
 void UEditorSidebarWidget::HandleBrushButtonClicked(EEditorBrush Brush)
 {

@@ -16,7 +16,7 @@ static const FBrushDescriptor GBrushDescriptors[] =
     { EEditorBrush::BoxSpawn,      EGridCellType::Box,          TEXT("箱子生成"), TEXT("Box"),     TEXT("7"), FLinearColor(1.0f, 0.667f, 0.0f) },
     { EEditorBrush::PlayerStart,   EGridCellType::Empty,        TEXT("玩家起点"), TEXT("Start"),   TEXT("8"), FLinearColor(0.267f, 1.0f, 0.267f) },
     { EEditorBrush::Teleporter,    EGridCellType::Teleporter,   TEXT("传送阵"),   TEXT("Teleporter"), TEXT("9"), FLinearColor(0.0f, 0.8f, 0.8f) },
-    { EEditorBrush::Eraser,        EGridCellType::Empty,        TEXT("橡皮擦"),   TEXT("Eraser"),  TEXT("E"), FLinearColor(1.0f, 0.267f, 0.267f) },
+    { EEditorBrush::Eraser,        EGridCellType::Empty,        TEXT("橡皮擦"),   TEXT("Eraser"),  TEXT("0"), FLinearColor(1.0f, 0.267f, 0.267f) },
 };
 
 namespace BrushUtils

@@ -38,6 +38,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Editor|Group")
 	void SetPlacementMode(bool bIsPlacing, int32 PlacingGroupId = 0);
 
+	/** Show direction toggle on a group entry (for teleporter groups). */
+	UFUNCTION(BlueprintCallable, Category = "Editor|Group")
+	void SetGroupDirectionInfo(int32 GroupId, const FString& DirText);
+
 	// --- Delegates (for MainWidget to bind) ---
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGroupManagerAction, int32, GroupId);
 
@@ -49,6 +53,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnGroupManagerAction OnDeleteGroup;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnGroupManagerAction OnDirectionCycleGroup;
 
 protected:
 
@@ -76,6 +83,9 @@ protected:
 
 	UFUNCTION()
 	void HandleEntryDeleteClicked(int32 GroupId);
+
+	UFUNCTION()
+	void HandleEntryDirectionCycleClicked(int32 GroupId);
 
 	void UpdateEmptyHint();
 };

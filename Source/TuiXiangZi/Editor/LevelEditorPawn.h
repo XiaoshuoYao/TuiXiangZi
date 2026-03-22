@@ -113,6 +113,7 @@ protected:
     void HandleKeyBrush6();
     void HandleKeyBrush7();
     void HandleKeyBrush8();
+    void HandleKeyBrush9();
     void HandleKeyBrushEraser();
     void HandleShortcutNew();
     void HandleShortcutSave();

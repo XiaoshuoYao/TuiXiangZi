@@ -29,6 +29,7 @@ void UGroupManagerPanel::AddGroupEntry(int32 GroupId, const FMechanismGroupStyle
 	Entry->OnRowClicked.AddDynamic(this, &UGroupManagerPanel::HandleEntryRowClicked);
 	Entry->OnColorEditClicked.AddDynamic(this, &UGroupManagerPanel::HandleEntryColorEditClicked);
 	Entry->OnDeleteClicked.AddDynamic(this, &UGroupManagerPanel::HandleEntryDeleteClicked);
+	Entry->OnDirectionCycleClicked.AddDynamic(this, &UGroupManagerPanel::HandleEntryDirectionCycleClicked);
 
 	GroupList->AddChild(Entry);
 	EntryMap.Add(GroupId, Entry);
@@ -152,6 +153,27 @@ void UGroupManagerPanel::HandleEntryColorEditClicked(int32 GroupId)
 void UGroupManagerPanel::HandleEntryDeleteClicked(int32 GroupId)
 {
 	OnDeleteGroup.Broadcast(GroupId);
+}
+
+void UGroupManagerPanel::HandleEntryDirectionCycleClicked(int32 GroupId)
+{
+	OnDirectionCycleGroup.Broadcast(GroupId);
+}
+
+void UGroupManagerPanel::SetGroupDirectionInfo(int32 GroupId, const FString& DirText)
+{
+	UGroupEntryWidget** FoundEntry = EntryMap.Find(GroupId);
+	if (FoundEntry && *FoundEntry)
+	{
+		if (DirText.IsEmpty())
+		{
+			(*FoundEntry)->HideDirectionInfo();
+		}
+		else
+		{
+			(*FoundEntry)->SetDirectionInfo(DirText);
+		}
+	}
 }
 
 void UGroupManagerPanel::UpdateEmptyHint()

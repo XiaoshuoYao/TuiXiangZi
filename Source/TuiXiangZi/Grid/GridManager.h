@@ -159,6 +159,9 @@ protected:
     void PostMoveSettlement();
     void CheckGoalCondition();
 
+    // ===== Teleporter: actors that moved this turn (eligible for teleport) =====
+    TSet<AActor*> ActorsMovedThisTurn;
+
     // ===== Mechanism Tracking =====
     UPROPERTY()
     TArray<UGridMechanismComponent*> AllMechanisms;

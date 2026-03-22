@@ -13,6 +13,7 @@ struct FGameEventPayload
 	FIntPoint FromPos = FIntPoint::ZeroValue;
 	FIntPoint ToPos   = FIntPoint::ZeroValue;
 	int32 IntParam    = 0;
+	float FloatParam  = 0.0f;
 	bool BoolParam    = false;
 	FName NameParam   = NAME_None;
 
@@ -38,6 +39,14 @@ struct FGameEventPayload
 	{
 		FGameEventPayload P;
 		P.IntParam = Value;
+		return P;
+	}
+	static FGameEventPayload MakeGridBounds(FIntPoint Min, FIntPoint Max, float CellSize)
+	{
+		FGameEventPayload P;
+		P.FromPos = Min;
+		P.ToPos = Max;
+		P.FloatParam = CellSize;
 		return P;
 	}
 };

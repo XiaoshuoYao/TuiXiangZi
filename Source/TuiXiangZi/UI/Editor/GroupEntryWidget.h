@@ -20,6 +20,12 @@ public:
 	void SetBaseColor(FLinearColor NewColor);
 	void SetInteractionEnabled(bool bEnabled);
 
+	/** Show or update the direction toggle for teleporter groups. Pass empty to hide. */
+	void SetDirectionInfo(const FString& DirText);
+
+	/** Hide direction toggle. */
+	void HideDirectionInfo();
+
 	int32 GetGroupId() const { return GroupId; }
 
 	// --- Delegates ---
@@ -33,6 +39,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnGroupEntryAction OnDeleteClicked;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnGroupEntryAction OnDirectionCycleClicked;
 
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -53,6 +62,14 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UButton* DeleteButton;
 
+	/** Optional direction toggle button for teleporter groups. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UButton* DirectionButton;
+
+	/** Optional direction text for teleporter groups. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UTextBlock* DirectionText;
+
 	int32 GroupId = 0;
 	bool bIsSelected = false;
 
@@ -66,6 +83,9 @@ protected:
 
 	UFUNCTION()
 	void HandleDeleteClicked();
+
+	UFUNCTION()
+	void HandleDirectionCycleClicked();
 
 	UFUNCTION()
 	void HandleRowHovered();

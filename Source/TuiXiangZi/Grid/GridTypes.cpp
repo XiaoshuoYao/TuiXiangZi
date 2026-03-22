@@ -1,4 +1,9 @@
 #include "Grid/GridTypes.h"
+#include "Gameplay/Mechanisms/DoorMechanismComponent.h"
+#include "Gameplay/Mechanisms/PressurePlateMechanismComponent.h"
+#include "Gameplay/Mechanisms/GoalMechanismComponent.h"
+#include "Gameplay/Mechanisms/TeleporterMechanismComponent.h"
+#include "Gameplay/Modifiers/IceTileModifier.h"
 
 // ============================================================
 // Cell Type Descriptor Table
@@ -51,5 +56,18 @@ namespace GridTypeUtils
         }
         UE_LOG(LogTemp, Warning, TEXT("GridTypeUtils::StringToCellType: Unknown type '%s', defaulting to Empty"), *Str);
         return EGridCellType::Empty;
+    }
+
+    UClass* GetRequiredTileComponentClass(EGridCellType Type)
+    {
+        switch (Type)
+        {
+        case EGridCellType::Door:          return UDoorMechanismComponent::StaticClass();
+        case EGridCellType::PressurePlate: return UPressurePlateMechanismComponent::StaticClass();
+        case EGridCellType::Goal:          return UGoalMechanismComponent::StaticClass();
+        case EGridCellType::Teleporter:    return UTeleporterMechanismComponent::StaticClass();
+        case EGridCellType::Ice:           return UIceTileModifier::StaticClass();
+        default:                           return nullptr;
+        }
     }
 }

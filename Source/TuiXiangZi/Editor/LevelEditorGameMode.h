@@ -8,7 +8,7 @@
 #include "LevelEditorGameMode.generated.h"
 
 class AGridManager;
-class AEditorGridVisualizer;
+class AEditorOverlayManager;
 class UTileStyleCatalog;
 class ATileVisualActor;
 class UTutorialDataAsset;
@@ -115,6 +115,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Editor")
     FString GetTeleporterDirectionText(int32 GroupId) const;
 
+    /** Check if a group contains teleporter cells. */
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    bool IsGroupTeleporter(int32 GroupId) const;
+
     // ===== Safety Checks =====
     UFUNCTION(BlueprintCallable, Category = "Editor")
     bool ShouldConfirmErase(FIntPoint GridPos) const;
@@ -183,7 +187,7 @@ protected:
     AGridManager* GridManagerRef;
 
     UPROPERTY()
-    AEditorGridVisualizer* GridVisualizerRef;
+    AActor* OverlayManagerRef;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Editor")
     EEditorBrush CurrentBrush = EEditorBrush::Floor;
@@ -224,7 +228,9 @@ protected:
     // ===== Helpers =====
     struct FLevelData BuildLevelData() const;
     void SpawnPlayerStartMarker(FIntPoint Pos);
-    void UpdateGridVisualizerBounds();
+
+    /** Broadcast grid bounds changed event so overlays can update. */
+    void BroadcastGridBoundsChanged();
 
     EGridCellType BrushToCellType(EEditorBrush Brush) const;
 

@@ -63,6 +63,7 @@ void UEditorMainWidget::NativeConstruct()
 		GroupManager->OnSelectGroup.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrSelectGroup);
 		GroupManager->OnEditGroupColor.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrEditColor);
 		GroupManager->OnDeleteGroup.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrDeleteGroup);
+		GroupManager->OnDirectionCycleGroup.AddDynamic(this, &UEditorMainWidget::HandleGroupMgrDirectionCycle);
 	}
 
 	// 4. Initialize dialog layer
@@ -122,7 +123,7 @@ void UEditorMainWidget::HandleModeChanged(EEditorMode NewMode)
 		StatusBar->RefreshModeText(NewMode);
 	}
 
-	if (NewMode == EEditorMode::PlacingPlatesForDoor)
+	if (NewMode == EEditorMode::PlacingPlatesForDoor || NewMode == EEditorMode::PlacingTeleporterPair)
 	{
 		if (Sidebar)
 		{
@@ -142,6 +143,16 @@ void UEditorMainWidget::HandleModeChanged(EEditorMode NewMode)
 		if (GroupManager)
 		{
 			GroupManager->SetPlacementMode(false);
+
+			// Refresh direction info for all teleporter groups
+			if (GameMode)
+			{
+				for (int32 GId : GameMode->GetAllGroupIds())
+				{
+					if (GameMode->IsGroupTeleporter(GId))
+						GroupManager->SetGroupDirectionInfo(GId, GameMode->GetTeleporterDirectionText(GId));
+				}
+			}
 		}
 	}
 
@@ -153,9 +164,15 @@ void UEditorMainWidget::HandleModeChanged(EEditorMode NewMode)
 
 void UEditorMainWidget::HandleGroupCreated(int32 GroupId)
 {
-	if (GroupManager)
+	if (GroupManager && GameMode)
 	{
 		GroupManager->AddGroupEntry(GroupId, GameMode->GetGroupStyle(GroupId));
+
+		// Show direction toggle for teleporter groups
+		if (GameMode->IsGroupTeleporter(GroupId))
+		{
+			GroupManager->SetGroupDirectionInfo(GroupId, GameMode->GetTeleporterDirectionText(GroupId));
+		}
 	}
 	RefreshStats();
 }
@@ -310,10 +327,23 @@ void UEditorMainWidget::HandleGroupMgrDeleteGroup(int32 GroupId)
 	ShowConfirmDialog(
 		NSLOCTEXT("Editor", "DeleteGroup", "删除分组"),
 		FText::Format(NSLOCTEXT("Editor", "DeleteGroupMsg",
-			"删除分组 \"{0}\" 将同时移除所有关联的门和压力板，是否继续？"),
+			"删除分组 \"{0}\" 将同时移除所有关联的机关，是否继续？"),
 			FText::FromString(Style.DisplayName)),
 		NSLOCTEXT("Editor", "Delete", "删除"),
 		[this, GroupId]() { GameMode->DeleteGroup(GroupId); });
+}
+
+void UEditorMainWidget::HandleGroupMgrDirectionCycle(int32 GroupId)
+{
+	if (!GameMode) return;
+
+	GameMode->CycleTeleporterDirection(GroupId);
+
+	// Update the direction text in the group entry
+	if (GroupManager)
+	{
+		GroupManager->SetGroupDirectionInfo(GroupId, GameMode->GetTeleporterDirectionText(GroupId));
+	}
 }
 
 // ============================================================
@@ -459,7 +489,8 @@ bool UEditorMainWidget::HandleEscPressed()
 	}
 
 	// Priority 2: Cancel placement mode
-	if (GameMode && GameMode->GetEditorMode() == EEditorMode::PlacingPlatesForDoor)
+	if (GameMode && (GameMode->GetEditorMode() == EEditorMode::PlacingPlatesForDoor
+		|| GameMode->GetEditorMode() == EEditorMode::PlacingTeleporterPair))
 	{
 		GameMode->CancelPlacementMode();
 		return true;
@@ -650,6 +681,15 @@ void UEditorMainWidget::DoLoad(const FString& FileName)
 		if (GroupManager)
 		{
 			GroupManager->RebuildFromGameMode(GameMode);
+
+			// Show direction toggles for teleporter groups
+			for (int32 GId : GameMode->GetAllGroupIds())
+			{
+				if (GameMode->IsGroupTeleporter(GId))
+				{
+					GroupManager->SetGroupDirectionInfo(GId, GameMode->GetTeleporterDirectionText(GId));
+				}
+			}
 		}
 		HandleBrushChanged(GameMode->GetCurrentBrush());
 		HandleModeChanged(GameMode->GetEditorMode());

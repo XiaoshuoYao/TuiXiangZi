@@ -8,6 +8,8 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/SimpleConstructionScript.h"
+#include "Engine/SCS_Node.h"
 #include "RenderingThread.h"
 #include "Editor.h"
 #endif
@@ -43,6 +45,35 @@ bool UTileStyleCatalog::HasStyle(FName StyleId) const
 }
 
 #if WITH_EDITOR
+// 检查 Actor 类（含蓝图）是否拥有指定 Component 子类
+static bool ActorClassHasComponent(TSubclassOf<AActor> ActorClass, UClass* ComponentClass)
+{
+    if (!ActorClass || !ComponentClass) return false;
+
+    // C++ 构造函数中添加的 component 在 CDO 上可见
+    AActor* CDO = ActorClass->GetDefaultObject<AActor>();
+    TArray<UActorComponent*> Comps;
+    CDO->GetComponents(ComponentClass, Comps);
+    if (Comps.Num() > 0) return true;
+
+    // 蓝图编辑器中添加的 component 在 SimpleConstructionScript 中
+    UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(ActorClass.Get());
+    while (BPGC)
+    {
+        if (USimpleConstructionScript* SCS = BPGC->SimpleConstructionScript)
+        {
+            for (USCS_Node* Node : SCS->GetAllNodes())
+            {
+                if (Node->ComponentClass && Node->ComponentClass->IsChildOf(ComponentClass))
+                    return true;
+            }
+        }
+        BPGC = Cast<UBlueprintGeneratedClass>(BPGC->GetSuperClass());
+    }
+
+    return false;
+}
+
 void UTileStyleCatalog::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
     Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -59,6 +90,26 @@ void UTileStyleCatalog::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
         else
         {
             SeenIds.Add(Style.StyleId);
+        }
+    }
+
+    // 验证每个 Style 的 ActorClass 是否包含其 CellType 所需的 Component
+    for (const FTileVisualStyle& Style : Styles)
+    {
+        if (!Style.ActorClass) continue;
+
+        UClass* RequiredComp = GridTypeUtils::GetRequiredTileComponentClass(Style.ApplicableType);
+        if (!RequiredComp) continue;
+
+        if (!ActorClassHasComponent(Style.ActorClass, RequiredComp))
+        {
+            UE_LOG(LogTemp, Error,
+                TEXT("TileStyleCatalog: Style '%s' (type=%s) → ActorClass '%s' is missing required component '%s'. "
+                     "This tile will not function correctly at runtime!"),
+                *Style.StyleId.ToString(),
+                *GridTypeUtils::CellTypeToString(Style.ApplicableType),
+                *Style.ActorClass->GetName(),
+                *RequiredComp->GetName());
         }
     }
 }

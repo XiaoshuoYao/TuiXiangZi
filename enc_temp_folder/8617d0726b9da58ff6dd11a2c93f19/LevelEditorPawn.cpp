@@ -1,7 +1,7 @@
 #include "Editor/LevelEditorPawn.h"
 #include "Grid/GridManager.h"
 #include "Editor/LevelEditorGameMode.h"
-#include "Editor/EditorOverlayManager.h"
+#include "Editor/EditorGridVisualizer.h"
 #include "Editor/EditorBrushTypes.h"
 #include "UI/Editor/EditorMainWidget.h"
 #include "Camera/CameraComponent.h"
@@ -430,7 +430,6 @@ void ALevelEditorPawn::HandleKeyBrush5()     { TrySetBrush(EEditorBrush::Door); 
 void ALevelEditorPawn::HandleKeyBrush6()     { TrySetBrush(EEditorBrush::PressurePlate); }
 void ALevelEditorPawn::HandleKeyBrush7()     { TrySetBrush(EEditorBrush::BoxSpawn); }
 void ALevelEditorPawn::HandleKeyBrush8()     { TrySetBrush(EEditorBrush::PlayerStart); }
-void ALevelEditorPawn::HandleKeyBrush9()     { TrySetBrush(EEditorBrush::Teleporter); }
 void ALevelEditorPawn::HandleKeyBrushEraser(){ TrySetBrush(EEditorBrush::Eraser); }
 
 void ALevelEditorPawn::HandleShortcutNew()
@@ -469,10 +468,15 @@ void ALevelEditorPawn::HandleToggleCoordinateLabels()
 {
     if (MainWidget && MainWidget->IsDialogOpen()) return;
 
-    AEditorOverlayManager* Manager = Cast<AEditorOverlayManager>(
-        UGameplayStatics::GetActorOfClass(GetWorld(), AEditorOverlayManager::StaticClass()));
-    if (Manager)
+    ALevelEditorGameMode* EditorGM = Cast<ALevelEditorGameMode>(
+        UGameplayStatics::GetGameMode(GetWorld()));
+    if (!EditorGM) return;
+
+    // Find the EditorGridVisualizer in the world
+    AEditorGridVisualizer* Visualizer = Cast<AEditorGridVisualizer>(
+        UGameplayStatics::GetActorOfClass(GetWorld(), AEditorGridVisualizer::StaticClass()));
+    if (Visualizer)
     {
-        Manager->CycleOverlayMode();
+        Visualizer->ToggleCoordinateLabels();
     }
 }

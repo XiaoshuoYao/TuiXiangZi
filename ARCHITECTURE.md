@@ -10,9 +10,10 @@ Source/TuiXiangZi/
 ├── Framework/       # GameInstance, GameMode, GameState, SaveGame
 ├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileVisualActor
 ├── Gameplay/        # SokobanCharacter, PushableBoxComponent, GroupColorIndicatorComponent
-│   └── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal
+│   └── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal, Teleporter
 ├── LevelData/       # LevelDataTypes, LevelSerializer (JSON)
-├── Editor/          # LevelEditorGameMode, EditorGridVisualizer, LevelEditorPawn, BrushTypes
+├── Editor/          # LevelEditorGameMode, EditorOverlayManager, LevelEditorPawn, BrushTypes
+│   └── Overlays/    # GridLineOverlay, CoordinateLabelOverlay, TeleporterArrowOverlay
 ├── Tutorial/        # TutorialTypes, TutorialDataAsset, TutorialSubsystem
 └── UI/              # MainMenu, LevelSelect, PauseMenu, TutorialWidget, PlayerController
     └── Editor/      # EditorMain, Sidebar, Toolbar, StatusBar, GroupManager, Dialogs
@@ -22,8 +23,8 @@ Source/TuiXiangZi/
 
 ### 1. Events (`Events/`)
 - **GameEventBus** (`UWorldSubsystem`) — Central event bus. All gameplay events (movement, tutorials, editor actions) are broadcast via `FName` tags and `FGameEventPayload`. Subscribers register with `Subscribe(Tag, Delegate)`. Synchronous dispatch, native `DECLARE_MULTICAST_DELEGATE`.
-- **GameEventPayload** — Generic payload struct with Actor, GridPos, FromPos, ToPos, IntParam fields and factory methods.
-- **GameEventTags** — Namespace with `inline const FName` constants for all event tags (e.g. `Grid.ActorMoved`, `Player.Moved`, `Editor.CellPainted`).
+- **GameEventPayload** — Generic payload struct with Actor, GridPos, FromPos, ToPos, IntParam, FloatParam fields and factory methods (MakeActorMoved, MakeGridPos, MakeGridBounds, etc.).
+- **GameEventTags** — Namespace with `inline const FName` constants for all event tags (e.g. `Grid.ActorMoved`, `Player.Moved`, `Editor.CellPainted`, `Editor.GridBoundsChanged`).
 
 ### 2. Grid System (`Grid/`)
 - **GridManager** — Central coordinator. Stores cells as `TMap<FIntPoint, FGridCell>`, manages occupancy, validates movement, spawns visual actors. Broadcasts events via `UGameEventBus` (`Grid.ActorMoved`, `Grid.PlayerEnteredGoal`, `Grid.PitFilled`).
@@ -53,8 +54,12 @@ Source/TuiXiangZi/
 - **LevelSerializer** — JSON serialization/deserialization, file discovery.
 
 ### 6. Editor (`Editor/`)
-- **LevelEditorGameMode** — Brush system (10 brushes), editor modes, group management (door plates + teleporter pairs), validation, save/load/test. Broadcasts editor events via `UGameEventBus` (`Editor.*` tags).
-- **EditorGridVisualizer** — Procedural mesh grid lines.
+- **LevelEditorGameMode** — Brush system (10 brushes), editor modes, group management (door plates + teleporter pairs), validation, save/load/test. Broadcasts editor events via `UGameEventBus` (`Editor.*` tags). No direct overlay references — overlays are event-driven.
+- **EditorOverlayManager** — Actor that owns overlay components. Manages overlay mode cycling (G key) and coordinated debug line flush/rebuild.
+- **EditorOverlayComponent** (abstract base) — Event-driven overlay component. Subscribes to `UGameEventBus` events, manages visibility and dirty-state.
+  - `GridLineOverlay` — grid lines via `DrawDebugLine`, subscribes to `Editor.GridBoundsChanged`.
+  - `CoordinateLabelOverlay` — coordinate labels via `ATextRenderActor`, subscribes to `Editor.GridBoundsChanged`.
+  - `TeleporterArrowOverlay` — teleporter connection arrows via `DrawDebugLine`, subscribes to cell change events, self-queries `GridManager`.
 - **LevelEditorPawn** — Editor input handling, dialog management.
 
 ### 7. Tutorial (`Tutorial/`)
@@ -92,7 +97,7 @@ LevelEditorGameMode::SaveLevel → Build FLevelData → Validate → LevelSerial
 - **Grid-Based Discrete Movement** — All positions are `FIntPoint`.
 - **Component-Based Mechanisms** — Pluggable mechanism components on TileVisualActor.
 - **Descriptor-Driven Types** — `FCellTypeDescriptor` (GridTypes.h) centralizes cell type properties (passability, underlay, erase behavior, serialization string). `FBrushDescriptor` (EditorBrushTypes.h) centralizes editor brush properties (display name, shortcut, icon color, cell type mapping). Adding a new cell type = add enum value + add one row to each descriptor table.
-- **Event-Driven** — Central `UGameEventBus` (`UWorldSubsystem`) with `FName`-tagged events for decoupling subsystems. `BlueprintAssignable` delegates retained as thin wrappers for Blueprint UI bindings.
+- **Event-Driven** — Central `UGameEventBus` (`UWorldSubsystem`) with `FName`-tagged events for decoupling subsystems. `BlueprintAssignable` delegates retained as thin wrappers for Blueprint UI bindings. Editor overlays subscribe to events independently — no direct coupling between GameMode and overlay components.
 - **Undo/Snapshot** — Stack-based move history in GameState.
 - **Style Catalog** — Centralized visual style management via DataAsset.
 - **Editor/Gameplay Separation** — Distinct GameModes for each context.

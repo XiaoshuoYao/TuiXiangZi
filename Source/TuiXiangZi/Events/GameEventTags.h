@@ -24,4 +24,6 @@ namespace GameEventTags
 	inline const FName EditorLevelSaved   = TEXT("Editor.LevelSaved");
 	inline const FName EditorLevelLoaded  = TEXT("Editor.LevelLoaded");
 	inline const FName EditorLevelTested  = TEXT("Editor.LevelTested");
+	inline const FName EditorGridBoundsChanged = TEXT("Editor.GridBoundsChanged");
+	inline const FName EditorTeleporterDirectionChanged = TEXT("Editor.TeleporterDirectionChanged");
 }

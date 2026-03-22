@@ -1,6 +1,6 @@
 #include "Editor/LevelEditorGameMode.h"
 #include "Editor/LevelEditorPawn.h"
-#include "Editor/EditorGridVisualizer.h"
+#include "Editor/EditorOverlayManager.h"
 #include "Grid/GridManager.h"
 #include "Grid/TileStyleCatalog.h"
 #include "Grid/TileVisualActor.h"
@@ -73,12 +73,12 @@ void ALevelEditorGameMode::BeginPlay()
             AGridManager::StaticClass(), FTransform::Identity, SpawnParams);
     }
 
-    // Spawn grid visualizer
+    // Spawn overlay manager
     {
         FActorSpawnParameters SpawnParams;
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        GridVisualizerRef = GetWorld()->SpawnActor<AEditorGridVisualizer>(
-            AEditorGridVisualizer::StaticClass(), FTransform::Identity, SpawnParams);
+        OverlayManagerRef = GetWorld()->SpawnActor<AEditorOverlayManager>(
+            AEditorOverlayManager::StaticClass(), FTransform::Identity, SpawnParams);
     }
 
     // Restore editor state if returning from test, otherwise create new level
@@ -271,7 +271,7 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     }
 
     bIsDirty = true;
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
     NotifyEditorTutorialEvent(GameEventTags::EditorCellPainted);
 }
 
@@ -289,7 +289,7 @@ void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
             FGridCell FloorCell;
             FloorCell.CellType = EGridCellType::Floor;
             GridManagerRef->SetCell(Pos, FloorCell);
-            UpdateGridVisualizerBounds();
+            BroadcastGridBoundsChanged();
             return;
         }
 
@@ -317,7 +317,7 @@ void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
     Cell.VisualStyleId = CurrentVisualStyleId;
     GridManagerRef->SetCell(Pos, Cell);
     GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
 }
 
 void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
@@ -342,7 +342,7 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
             }
         }
         bIsDirty = true;
-        UpdateGridVisualizerBounds();
+        BroadcastGridBoundsChanged();
         return;
     }
 
@@ -371,7 +371,7 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
             }
 
             bIsDirty = true;
-            UpdateGridVisualizerBounds();
+            BroadcastGridBoundsChanged();
             return;
         }
     }
@@ -391,7 +391,7 @@ void ALevelEditorGameMode::EraseAtGrid(FIntPoint Pos)
     }
 
     bIsDirty = true;
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
 }
 
 bool ALevelEditorGameMode::ShouldConfirmErase(FIntPoint GridPos) const
@@ -474,7 +474,7 @@ FLevelValidationResult ALevelEditorGameMode::ValidateLevel() const
                 FIntPoint Pos(X, Y);
                 if (!GridManagerRef->HasCell(Pos)) continue;
                 FGridCell Cell = GridManagerRef->GetCell(Pos);
-                if (IsGroupAnchor(Pos)) DoorGroups.Add(Cell.GroupId);
+                if (IsGroupAnchor(Pos) && Cell.CellType == EGridCellType::Door) DoorGroups.Add(Cell.GroupId);
                 if (Cell.CellType == EGridCellType::PressurePlate) PlateGroups.Add(Cell.GroupId);
             }
         }
@@ -551,7 +551,7 @@ void ALevelEditorGameMode::NewLevel(int32 Width, int32 Height)
     SpawnPlayerStartMarker(PlayerStartPos);
 
     bIsDirty = false;
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
     FocusEditorCamera();
     NotifyEditorTutorialEvent(GameEventTags::EditorNewLevel);
 }
@@ -653,7 +653,7 @@ void ALevelEditorGameMode::RestoreFromLevelData(const FLevelData& Data)
     // Recreate player marker (box visuals are handled by grid cells)
     SpawnPlayerStartMarker(PlayerStartPos);
 
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
 }
 
 void ALevelEditorGameMode::TestCurrentLevel()
@@ -736,7 +736,7 @@ void ALevelEditorGameMode::DeleteGroup(int32 GroupId)
 
     bIsDirty = true;
     OnGroupDeleted.Broadcast(GroupId);
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
 }
 
 TArray<int32> ALevelEditorGameMode::GetAllGroupIds() const
@@ -905,7 +905,7 @@ void ALevelEditorGameMode::HandleTeleporterPairPaint(FIntPoint Pos)
     SetEditorMode(EEditorMode::Normal);
     UE_LOG(LogTemp, Log, TEXT("Editor: Teleporter pair for group %d complete."), CurrentGroupId);
     bIsDirty = true;
-    UpdateGridVisualizerBounds();
+    BroadcastGridBoundsChanged();
 }
 
 void ALevelEditorGameMode::CycleTeleporterDirection(int32 GroupId)
@@ -954,6 +954,10 @@ void ALevelEditorGameMode::CycleTeleporterDirection(int32 GroupId)
     GridManagerRef->SetCellGroupId(TeleporterPositions[0], GroupId);
     GridManagerRef->SetCellGroupId(TeleporterPositions[1], GroupId);
     GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+    if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
+    {
+        EventBus->Broadcast(GameEventTags::EditorTeleporterDirectionChanged, FGameEventPayload::MakeInt(GroupId));
+    }
     bIsDirty = true;
 }
 
@@ -986,6 +990,25 @@ FString ALevelEditorGameMode::GetTeleporterDirectionText(int32 GroupId) const
             Positions[0].X, Positions[0].Y, Positions[1].X, Positions[1].Y);
     return FString::Printf(TEXT("单向 (%d,%d) → (%d,%d)"),
         Positions[1].X, Positions[1].Y, Positions[0].X, Positions[0].Y);
+}
+
+bool ALevelEditorGameMode::IsGroupTeleporter(int32 GroupId) const
+{
+    if (!GridManagerRef) return false;
+
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+    {
+        for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+        {
+            FIntPoint Pos(X, Y);
+            if (!GridManagerRef->HasCell(Pos)) continue;
+            FGridCell Cell = GridManagerRef->GetCell(Pos);
+            if (Cell.CellType == EGridCellType::Teleporter && Cell.GroupId == GroupId)
+                return true;
+        }
+    }
+    return false;
 }
 
 FString ALevelEditorGameMode::GetStatusText() const
@@ -1122,12 +1145,16 @@ void ALevelEditorGameMode::SpawnPlayerStartMarker(FIntPoint Pos)
     PlayerStartMarker = Marker;
 }
 
-void ALevelEditorGameMode::UpdateGridVisualizerBounds()
+void ALevelEditorGameMode::BroadcastGridBoundsChanged()
 {
-    if (!GridVisualizerRef || !GridManagerRef) return;
+    if (!GridManagerRef) return;
 
-    FIntRect Bounds = GridManagerRef->GetGridBounds();
-    GridVisualizerRef->UpdateGridLines(Bounds.Min, Bounds.Max, GridManagerRef->CellSize);
+    if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
+    {
+        FIntRect Bounds = GridManagerRef->GetGridBounds();
+        EventBus->Broadcast(GameEventTags::EditorGridBoundsChanged,
+            FGameEventPayload::MakeGridBounds(Bounds.Min, Bounds.Max, GridManagerRef->CellSize));
+    }
 }
 
 void ALevelEditorGameMode::FocusEditorCamera()

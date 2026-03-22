@@ -183,6 +183,8 @@ void AGridManager::ClearGrid()
 // ---- Movement ----
 bool AGridManager::TryMoveActor(FIntPoint FromGrid, EMoveDirection Direction)
 {
+    ActorsMovedThisTurn.Empty();
+
     FGridCell* FromCell = GridCells.Find(FromGrid);
     if (!FromCell || !FromCell->OccupyingActor.IsValid()) return false;
 
@@ -306,6 +308,8 @@ void AGridManager::UpdateOccupancy(FIntPoint OldPos, FIntPoint NewPos, AActor* A
         Char->CurrentGridPos = NewPos;
     else if (UPushableBoxComponent* BoxComp = Actor->FindComponentByClass<UPushableBoxComponent>())
         BoxComp->CurrentGridPos = NewPos;
+
+    ActorsMovedThisTurn.Add(Actor);
 }
 
 void AGridManager::HandleBoxFallIntoPit(AActor* BoxActor, FIntPoint PitPos)
@@ -425,6 +429,9 @@ void AGridManager::CheckTeleporters()
 
         AActor* Actor = Cell->OccupyingActor.Get();
         if (AlreadyTeleported.Contains(Actor)) continue;
+
+        // Only teleport actors that just moved onto this teleporter this turn
+        if (!ActorsMovedThisTurn.Contains(Actor)) continue;
 
         UTeleporterMechanismComponent* Dest = FindPairedTeleporter(Teleporter);
         if (!Dest || !Dest->CanReceive()) continue;
@@ -723,6 +730,31 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         {
             AllModifiers.Add(ModComp);
             ModifierLookup.Add(GridPos, ModComp);
+        }
+    }
+
+    // Validate that the spawned actor has the required component for this cell type
+    UClass* RequiredComp = GridTypeUtils::GetRequiredTileComponentClass(Cell.CellType);
+    if (RequiredComp)
+    {
+        bool bFound = false;
+        for (UGridTileComponent* Comp : TileComps)
+        {
+            if (Comp->IsA(RequiredComp))
+            {
+                bFound = true;
+                break;
+            }
+        }
+        if (!bFound)
+        {
+            UE_LOG(LogTemp, Error,
+                TEXT("SpawnOrUpdateVisualActor: Cell (%d,%d) type=%s is missing required component %s. "
+                     "Visual style '%s' may have an incorrectly configured ActorClass."),
+                GridPos.X, GridPos.Y,
+                *GridTypeUtils::CellTypeToString(Cell.CellType),
+                *RequiredComp->GetName(),
+                *Cell.VisualStyleId.ToString());
         }
     }
 }

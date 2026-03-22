@@ -86,4 +86,11 @@ namespace GridTypeUtils
 
     FString CellTypeToString(EGridCellType Type);
     EGridCellType StringToCellType(const FString& Str);
+
+    /**
+     * 返回指定地块类型所需的 UGridTileComponent 子类。
+     * 如果该类型不需要特定 component（如 Floor、Wall），返回 nullptr。
+     * 用于验证 TileStyleCatalog 中的 ActorClass 是否配置正确。
+     */
+    UClass* GetRequiredTileComponentClass(EGridCellType Type);
 }
