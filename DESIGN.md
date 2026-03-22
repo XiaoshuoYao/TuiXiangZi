@@ -188,7 +188,18 @@ class USpikeMechanismComponent : public UGridMechanismComponent {
 { EEditorBrush::Spike, EGridCellType::Spike, TEXT("尖刺"), TEXT("Spike"), TEXT("S"), FLinearColor::Red },
 ```
 
-完成。不需要修改 GridManager、LevelSerializer、编辑器绘制逻辑或 UI 侧边栏的任何已有代码。
+**第 5 步：创建蓝图并注册到 Catalog**
+
+继承 `TileActor` 创建蓝图，放入想要的 Mesh 和材质，挂上第 3 步写的机制组件。然后打开 `DA_DefaultTileStyles`，添加一条 `FTileVisualStyle`：
+- `StyleId`：唯一标识（如 `SpikeDefault`）
+- `ApplicableType`：适用的地块类型（如 `Spike`）
+- `ActorClass`：刚做的蓝图
+
+完成。不需要修改 GridManager、LevelSerializer、编辑器绘制逻辑或 UI 侧边栏的任何已有代码。注册后系统自动处理：编辑器侧边栏出现选择按钮、缩略图自动生成、关卡序列化自动保存加载、类型校验自动防止错误搭配。
+
+### 给已有地块类型新增视觉变体
+
+同一种地块类型可以有多种视觉样式（比如地板有木纹、石砖、草地等变体），通过 `TileStyleCatalog`（DataAsset）集中管理。只需重复上面的第 5 步：继承 `TileActor` 做一个新蓝图，然后在 `DA_DefaultTileStyles` 里加一行。美术或策划可以独立完成，不需要程序改任何代码。
 
 ### 新增一个 Modifier 需要几步？
 
@@ -206,29 +217,6 @@ class UConveyorModifier : public UTileModifierComponent {
 ```
 
 GridManager 在移动逻辑中自动检查 Modifier 并应用效果，无需修改移动代码。
-
-### 新增一个视觉变体需要几步？
-
-同一种地块类型可以有多种视觉样式（比如地板有木纹、石砖、草地等变体），通过 `TileStyleCatalog`（DataAsset）集中管理。新增一个变体只需要两步：
-
-**第 1 步：做一个 Blueprint**
-
-继承 `TileVisualActor`，放入想要的 Mesh 和材质。如果是有机制的方块，挂上对应的模块。
-
-**第 2 步：在 DataAsset 里加一行**
-
-打开 `DA_DefaultTileStyles`，添加一条 `FTileVisualStyle`：
-- `StyleId`：唯一标识（如 `FloorWood`）
-- `ApplicableType`：适用的地块类型（如 `Floor`）
-- `ActorClass`：刚做的 Blueprint
-
-完成。系统自动处理剩下的所有事情：
-- **编辑器侧边栏**自动出现新变体的选择按钮
-- **缩略图**自动生成（编辑器内一键 Generate All Thumbnails，自动创建预览图）
-- **关卡序列化**自动保存和加载每个格子选用的变体
-- **类型校验**自动防止把墙壁样式用在地板上
-
-这意味着美术或策划可以独立添加视觉变体，不需要程序改任何代码，也不需要手动修改 UI。
 
 ---
 

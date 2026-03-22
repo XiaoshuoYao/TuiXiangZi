@@ -16,7 +16,7 @@
 Source/TuiXiangZi/
 ├── Events/          # 事件总线（UWorldSubsystem）
 ├── Framework/       # GameInstance, GameMode, GameState, SaveGame
-├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileVisualActor
+├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileActor
 ├── Gameplay/        # SokobanCharacter, PushableBoxComponent, GroupColorIndicatorComponent
 │   ├── Mechanisms/  # GridMechanismComponent (基类), Door, PressurePlate, Goal, Teleporter
 │   └── Modifiers/   # TileModifierComponent (基类), IceTileModifier
@@ -58,7 +58,7 @@ EventBus->Subscribe(GameEventTags::Player::Moved, FOnGameEvent::CreateUObject(th
 - 网格存储：`TMap<FIntPoint, FGridCell>`，支持任意形状的关卡
 - 占位管理：跟踪每个格子上的 Actor（玩家、箱子）
 - 移动校验：`TryMoveActor()` 统一处理移动请求，检查通行性、推箱子、机关阻挡
-- 机制发现：自动检测 TileVisualActor 上的 Mechanism/Modifier 组件
+- 机制发现：自动检测 TileActor 上的 Mechanism/Modifier 组件
 - 事件广播：通过 GameEventBus 广播移动、胜利等事件
 
 **GridTypes**：
@@ -79,7 +79,7 @@ struct FCellTypeDescriptor {
 };
 ```
 
-**TileVisualActor**：所有网格视觉元素的基类 Actor。Mechanism 和 Modifier 组件挂载于此。
+**TileActor**：所有网格视觉元素的基类 Actor。Mechanism 和 Modifier 组件挂载于此。
 
 **TileStyleCatalog**：DataAsset，按地块类型配置视觉样式变体。
 
@@ -269,7 +269,7 @@ SokobanGameMode::LoadLevel(JsonPath)
   → LevelSerializer::LoadFromJson → FLevelData
   → GridManager::InitFromLevelData
     → 创建 FGridCell 网格
-    → 生成 TileVisualActor + 挂载 Mechanism/Modifier 组件
+    → 生成 TileActor + 挂载 Mechanism/Modifier 组件
     → 应用分组颜色
   → 设置玩家起始位置
 ```
@@ -301,7 +301,7 @@ LevelEditorGameMode::TestLevel
 | 模式 | 应用 |
 |------|------|
 | **网格离散化** | 所有位置用 `FIntPoint`，避免浮点对齐问题 |
-| **组件化机制** | Mechanism/Modifier 组件挂载到 TileVisualActor，即插即用 |
+| **组件化机制** | Mechanism/Modifier 组件挂载到 TileActor，即插即用 |
 | **描述表驱动** | `FCellTypeDescriptor` + `FBrushDescriptor`，单行配置贯通全链路 |
 | **事件驱动** | GameEventBus（`UWorldSubsystem`）+ `FName` 标签解耦所有子系统；编辑器 overlay 通过事件独立更新，GameMode 无直接引用 |
 | **快照撤销** | GameState 维护 `TArray<FLevelSnapshot>`，直接恢复完整状态 |

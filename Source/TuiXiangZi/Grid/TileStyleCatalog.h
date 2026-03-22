@@ -5,7 +5,7 @@
 #include "Grid/GridTypes.h"
 #include "TileStyleCatalog.generated.h"
 
-class ATileVisualActor;
+class ATileActor;
 
 USTRUCT(BlueprintType)
 struct FTileVisualStyle

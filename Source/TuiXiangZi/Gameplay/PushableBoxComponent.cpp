@@ -1,6 +1,6 @@
 #include "Gameplay/PushableBoxComponent.h"
 #include "Grid/GridManager.h"
-#include "Grid/TileVisualActor.h"
+#include "Grid/TileActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -12,7 +12,7 @@
 
 UStaticMeshComponent* UPushableBoxComponent::FindOwnerMeshComp() const
 {
-	ATileVisualActor* Owner = Cast<ATileVisualActor>(GetOwner());
+	ATileActor* Owner = Cast<ATileActor>(GetOwner());
 	return Owner ? Owner->MeshComp : nullptr;
 }
 

@@ -8,7 +8,7 @@ Unreal Engine 5.5 Sokoban puzzle game with built-in level editor. Single module:
 Source/TuiXiangZi/
 ├── Events/          # GameEventBus (UWorldSubsystem), GameEventPayload, GameEventTags
 ├── Framework/       # GameInstance, GameMode, GameState, SaveGame
-├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileVisualActor
+├── Grid/            # GridManager, GridTypes, TileStyleCatalog, TileActor
 ├── Gameplay/        # SokobanCharacter, PushableBoxComponent, GroupColorIndicatorComponent
 │   └── Mechanisms/  # GridMechanismComponent (base), Door, PressurePlate, Goal, Teleporter
 ├── LevelData/       # LevelDataTypes, LevelSerializer (JSON)
@@ -30,7 +30,7 @@ Source/TuiXiangZi/
 - **GridManager** — Central coordinator. Stores cells as `TMap<FIntPoint, FGridCell>`, manages occupancy, validates movement, spawns visual actors. Broadcasts events via `UGameEventBus` (`Grid.ActorMoved`, `Grid.PlayerEnteredGoal`, `Grid.PitFilled`).
 - **GridTypes** — Enums (`EGridCellType`, `EMoveDirection`) and structs (`FGridCell`).
 - **TileStyleCatalog** — DataAsset for visual style variants per cell type.
-- **TileVisualActor** — Base actor for all grid-placed visual elements.
+- **TileActor** — Base actor for all grid-placed visual elements.
 
 ### 3. Framework (`Framework/`)
 - **SokobanGameInstance** — Level selection state (Preset/Custom/Editor), progression tracking, level discovery.
@@ -42,7 +42,7 @@ Source/TuiXiangZi/
 - **SokobanCharacter** — Grid-based 4-direction movement, Enhanced Input, timeline animation (0.15s), top-down camera.
 - **PushableBoxComponent** — Box push/fall logic, plate feedback, material instance dynamics.
 - **GroupColorIndicatorComponent** — Blueprintable group color display. BP subclasses override `OnUpdateVisual` for custom visuals. Auto-notified by GridManager and GridMechanismComponent.
-- **Mechanisms** (component-based, attached to TileVisualActor):
+- **Mechanisms** (component-based, attached to TileActor):
   - `GridMechanismComponent` (abstract base) — activation, passability, group roles, editor placement flow.
   - `DoorMechanismComponent` — blocks passage when closed, animated open/close, activated by pressure plate groups.
   - `PressurePlateMechanismComponent` — triggers group activation when occupied by a box.
@@ -95,7 +95,7 @@ LevelEditorGameMode::SaveLevel → Build FLevelData → Validate → LevelSerial
 
 ## Design Patterns
 - **Grid-Based Discrete Movement** — All positions are `FIntPoint`.
-- **Component-Based Mechanisms** — Pluggable mechanism components on TileVisualActor.
+- **Component-Based Mechanisms** — Pluggable mechanism components on TileActor.
 - **Descriptor-Driven Types** — `FCellTypeDescriptor` (GridTypes.h) centralizes cell type properties (passability, underlay, erase behavior, serialization string). `FBrushDescriptor` (EditorBrushTypes.h) centralizes editor brush properties (display name, shortcut, icon color, cell type mapping). Adding a new cell type = add enum value + add one row to each descriptor table.
 - **Event-Driven** — Central `UGameEventBus` (`UWorldSubsystem`) with `FName`-tagged events for decoupling subsystems. `BlueprintAssignable` delegates retained as thin wrappers for Blueprint UI bindings. Editor overlays subscribe to events independently — no direct coupling between GameMode and overlay components.
 - **Undo/Snapshot** — Stack-based move history in GameState.

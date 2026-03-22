@@ -1,5 +1,5 @@
 #include "Grid/TileStyleCatalog.h"
-#include "Grid/TileVisualActor.h"
+#include "Grid/TileActor.h"
 
 #if WITH_EDITOR
 #include "Components/SceneCaptureComponent2D.h"

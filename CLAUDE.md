@@ -14,7 +14,7 @@
 ## Code Conventions
 - Grid positions use `FIntPoint` throughout
 - Mechanism components inherit from `UGridMechanismComponent`
-- Visual actors inherit from `ATileVisualActor`
+- Visual actors inherit from `ATileActor`
 - UI widgets follow UMG pattern with `BindWidget` properties
 - Level data serialized as JSON via `ULevelSerializer`
 - Movement animation uses `UTimelineComponent` (0.15s duration)

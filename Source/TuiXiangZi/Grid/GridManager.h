@@ -9,7 +9,7 @@ struct FLevelData;
 struct FTileVisualStyle;
 struct FMechanismGroupStyleData;
 class UTileStyleCatalog;
-class ATileVisualActor;
+class ATileActor;
 class UGridTileComponent;
 class UGridMechanismComponent;
 class UDoorMechanismComponent;
@@ -72,7 +72,7 @@ public:
     void SetCellGroupId(FIntPoint GridPos, int32 GroupId);
 
     /** Return the visual actor at a grid position, or nullptr. */
-    ATileVisualActor* GetVisualActorAt(FIntPoint GridPos) const;
+    ATileActor* GetVisualActorAt(FIntPoint GridPos) const;
 
     // ===== Dynamic Bounds =====
     UFUNCTION(BlueprintCallable, Category = "Grid|Query")
@@ -120,7 +120,7 @@ public:
     UTileStyleCatalog* TileStyleCatalog;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid|Style")
-    TMap<EGridCellType, TSubclassOf<ATileVisualActor>> DefaultVisualClasses;
+    TMap<EGridCellType, TSubclassOf<ATileActor>> DefaultVisualClasses;
 
     const FTileVisualStyle* ResolveTileVisual(const FGridCell& Cell) const;
 
@@ -132,11 +132,11 @@ protected:
     TMap<FIntPoint, FGridCell> GridCells;
 
     UPROPERTY()
-    TMap<FIntPoint, ATileVisualActor*> VisualActors;
+    TMap<FIntPoint, ATileActor*> VisualActors;
 
     /** 机关格子底下的地板 Actor */
     UPROPERTY()
-    TMap<FIntPoint, ATileVisualActor*> FloorUnderlays;
+    TMap<FIntPoint, ATileActor*> FloorUnderlays;
 
     void SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& Cell);
     void DestroyVisualActor(FIntPoint GridPos);
@@ -148,7 +148,7 @@ protected:
     /** Re-spawn any adjacent door visuals so they re-align with walls. */
     void RefreshAdjacentDoors(FIntPoint GridPos);
 
-    ATileVisualActor* SpawnTileVisualFromStyle(const FGridCell& Cell, const FVector& WorldPos,
+    ATileActor* SpawnTileVisualFromStyle(const FGridCell& Cell, const FVector& WorldPos,
         FActorSpawnParameters& SpawnParams);
 
     // ===== Movement Helpers =====

@@ -10,7 +10,7 @@
 class AGridManager;
 class AEditorOverlayManager;
 class UTileStyleCatalog;
-class ATileVisualActor;
+class ATileActor;
 class UTutorialDataAsset;
 class UTutorialWidget;
 

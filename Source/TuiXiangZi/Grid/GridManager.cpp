@@ -2,7 +2,7 @@
 #include "Events/GameEventBus.h"
 #include "Events/GameEventTags.h"
 #include "Grid/TileStyleCatalog.h"
-#include "Grid/TileVisualActor.h"
+#include "Grid/TileActor.h"
 #include "LevelData/LevelDataTypes.h"
 #include "Gameplay/SokobanCharacter.h"
 #include "Gameplay/PushableBoxComponent.h"
@@ -118,7 +118,7 @@ void AGridManager::SetCellGroupId(FIntPoint GridPos, int32 GroupId)
     }
 }
 
-ATileVisualActor* AGridManager::GetVisualActorAt(FIntPoint GridPos) const
+ATileActor* AGridManager::GetVisualActorAt(FIntPoint GridPos) const
 {
     if (const auto* Found = VisualActors.Find(GridPos))
         return *Found;
@@ -536,7 +536,7 @@ void AGridManager::SpawnBoxActorAt(FIntPoint GridPos, FName VisualStyleId)
     BoxCell.CellType = EGridCellType::Box;
     BoxCell.VisualStyleId = VisualStyleId;
 
-    ATileVisualActor* BoxActor = SpawnTileVisualFromStyle(BoxCell, WorldPos, SpawnParams);
+    ATileActor* BoxActor = SpawnTileVisualFromStyle(BoxCell, WorldPos, SpawnParams);
     if (!BoxActor) return;
 
     // Fallback: if spawned actor has no mesh, set a default Cube
@@ -639,7 +639,7 @@ FName AGridManager::FindNearbyFloorStyleId(FIntPoint GridPos) const
 }
 
 // ---- Visual Actor Management ----
-ATileVisualActor* AGridManager::SpawnTileVisualFromStyle(
+ATileActor* AGridManager::SpawnTileVisualFromStyle(
     const FGridCell& Cell, const FVector& WorldPos, FActorSpawnParameters& SpawnParams)
 {
     TSubclassOf<AActor> ActorClass = nullptr;
@@ -655,10 +655,10 @@ ATileVisualActor* AGridManager::SpawnTileVisualFromStyle(
     }
 
     if (!ActorClass)
-        ActorClass = ATileVisualActor::StaticClass();
+        ActorClass = ATileActor::StaticClass();
 
     AActor* Spawned = GetWorld()->SpawnActor<AActor>(ActorClass, FTransform(WorldPos), SpawnParams);
-    return Cast<ATileVisualActor>(Spawned);
+    return Cast<ATileActor>(Spawned);
 }
 
 void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& Cell)
@@ -684,7 +684,7 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         FloorCell.CellType = EGridCellType::Floor;
         FloorCell.VisualStyleId = FindNearbyFloorStyleId(GridPos);
 
-        ATileVisualActor* FloorVisual = SpawnTileVisualFromStyle(FloorCell, WorldPos, SpawnParams);
+        ATileActor* FloorVisual = SpawnTileVisualFromStyle(FloorCell, WorldPos, SpawnParams);
         if (FloorVisual)
         {
             FloorVisual->InitializeForGrid(CellSize, GridPos);
@@ -699,7 +699,7 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         return;
     }
 
-    ATileVisualActor* Visual = SpawnTileVisualFromStyle(Cell, WorldPos, SpawnParams);
+    ATileActor* Visual = SpawnTileVisualFromStyle(Cell, WorldPos, SpawnParams);
     if (!Visual) return;
 
     // Auto-align door with adjacent walls
@@ -795,7 +795,7 @@ void AGridManager::RefreshAdjacentDoors(FIntPoint GridPos)
 void AGridManager::DestroyVisualActor(FIntPoint GridPos)
 {
     // Destroy floor underlay if present
-    if (ATileVisualActor** FloorFound = FloorUnderlays.Find(GridPos))
+    if (ATileActor** FloorFound = FloorUnderlays.Find(GridPos))
     {
         if (*FloorFound) (*FloorFound)->Destroy();
         FloorUnderlays.Remove(GridPos);
@@ -808,7 +808,7 @@ void AGridManager::DestroyVisualActor(FIntPoint GridPos)
         AllBoxes.Remove(BoxComp);
     }
 
-    if (ATileVisualActor** Found = VisualActors.Find(GridPos))
+    if (ATileActor** Found = VisualActors.Find(GridPos))
     {
         if (*Found)
         {

@@ -7,7 +7,7 @@
 /**
  * StaticMeshComponent that displays the group color on a mechanism's visual actor.
  *
- * Add this component to a TileVisualActor Blueprint, assign a mesh (e.g. torus)
+ * Add this component to a TileActor Blueprint, assign a mesh (e.g. torus)
  * and a material with "Color" (Vector) / "Intensity" (Scalar) parameters.
  * GridManager and GridMechanismComponent will automatically feed it
  * group colors and activation state.

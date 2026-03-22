@@ -3,7 +3,7 @@
 #include "Editor/EditorOverlayManager.h"
 #include "Grid/GridManager.h"
 #include "Grid/TileStyleCatalog.h"
-#include "Grid/TileVisualActor.h"
+#include "Grid/TileActor.h"
 #include "Grid/GridTypes.h"
 #include "Gameplay/GridTileComponent.h"
 #include "LevelData/LevelDataTypes.h"
@@ -813,7 +813,7 @@ void ALevelEditorGameMode::ApplyPostPaintFlow(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
 
-    ATileVisualActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
+    ATileActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
     if (!Visual) return;
 
     TArray<UGridTileComponent*> TileComps;
@@ -849,7 +849,7 @@ bool ALevelEditorGameMode::IsGroupAnchor(FIntPoint Pos) const
 {
     if (!GridManagerRef) return false;
 
-    ATileVisualActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
+    ATileActor* Visual = GridManagerRef->GetVisualActorAt(Pos);
     if (!Visual) return false;
 
     TArray<UGridTileComponent*> TileComps;
@@ -906,6 +906,7 @@ void ALevelEditorGameMode::HandleTeleporterPairPaint(FIntPoint Pos)
     UE_LOG(LogTemp, Log, TEXT("Editor: Teleporter pair for group %d complete."), CurrentGroupId);
     bIsDirty = true;
     BroadcastGridBoundsChanged();
+    NotifyEditorTutorialEvent(GameEventTags::EditorCellPainted);
 }
 
 void ALevelEditorGameMode::CycleTeleporterDirection(int32 GroupId)

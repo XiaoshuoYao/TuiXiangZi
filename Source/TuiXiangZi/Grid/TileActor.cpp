@@ -1,7 +1,7 @@
-#include "Grid/TileVisualActor.h"
+#include "Grid/TileActor.h"
 #include "Components/StaticMeshComponent.h"
 
-ATileVisualActor::ATileVisualActor()
+ATileActor::ATileActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -13,7 +13,7 @@ ATileVisualActor::ATileVisualActor()
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void ATileVisualActor::InitializeForGrid_Implementation(float CellSize, FIntPoint GridPos)
+void ATileActor::InitializeForGrid_Implementation(float CellSize, FIntPoint GridPos)
 {
 	// 默认实现：按 CellSize 缩放
 	SetActorScale3D(FVector(CellSize / 100.0f));
