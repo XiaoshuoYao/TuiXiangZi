@@ -2,6 +2,8 @@
 #include "ProceduralMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Engine/TextRenderActor.h"
+#include "Components/TextRenderComponent.h"
 
 AEditorGridVisualizer::AEditorGridVisualizer()
 {
@@ -39,7 +41,8 @@ void AEditorGridVisualizer::CreateGridMaterial()
 void AEditorGridVisualizer::UpdateGridLines(FIntPoint MinBound, FIntPoint MaxBound, float InCellSize)
 {
     // Skip rebuild if bounds haven't changed
-    if (CachedMinBound == MinBound && CachedMaxBound == MaxBound && FMath::IsNearlyEqual(CellSize, InCellSize))
+    bool bBoundsChanged = !(CachedMinBound == MinBound && CachedMaxBound == MaxBound && FMath::IsNearlyEqual(CellSize, InCellSize));
+    if (!bBoundsChanged)
     {
         return;
     }
@@ -47,6 +50,12 @@ void AEditorGridVisualizer::UpdateGridLines(FIntPoint MinBound, FIntPoint MaxBou
     CachedMinBound = MinBound;
     CachedMaxBound = MaxBound;
     CellSize = InCellSize;
+
+    // Rebuild coordinate labels if they are visible
+    if (bShowCoordinateLabels)
+    {
+        RebuildCoordinateLabels();
+    }
 
     // Ensure material exists
     CreateGridMaterial();
@@ -137,4 +146,70 @@ void AEditorGridVisualizer::AddLineQuad(FVector Start, FVector End, float Thickn
     Triangles.Add(BaseIndex + 0);
     Triangles.Add(BaseIndex + 2);
     Triangles.Add(BaseIndex + 3);
+}
+
+void AEditorGridVisualizer::ToggleCoordinateLabels()
+{
+    bShowCoordinateLabels = !bShowCoordinateLabels;
+
+    if (bShowCoordinateLabels)
+    {
+        RebuildCoordinateLabels();
+    }
+    else
+    {
+        DestroyCoordinateLabels();
+    }
+}
+
+void AEditorGridVisualizer::RebuildCoordinateLabels()
+{
+    DestroyCoordinateLabels();
+
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    // Use padded bounds to match grid lines
+    FIntPoint PaddedMin = CachedMinBound - FIntPoint(PaddingCells, PaddingCells);
+    FIntPoint PaddedMax = CachedMaxBound + FIntPoint(PaddingCells, PaddingCells);
+
+    float LabelZ = LineZ + 0.5f;
+    float HalfCell = CellSize * 0.5f;
+
+    for (int32 X = PaddedMin.X; X < PaddedMax.X; ++X)
+    {
+        for (int32 Y = PaddedMin.Y; Y < PaddedMax.Y; ++Y)
+        {
+            FVector CellCenter(X * CellSize + HalfCell, Y * CellSize + HalfCell, LabelZ);
+
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.Owner = this;
+            ATextRenderActor* TextActor = World->SpawnActor<ATextRenderActor>(CellCenter, FRotator(-90.0f, 0.0f, 0.0f), SpawnParams);
+            if (!TextActor) continue;
+
+            UTextRenderComponent* TextComp = TextActor->GetTextRender();
+            if (TextComp)
+            {
+                TextComp->SetText(FText::FromString(FString::Printf(TEXT("%d,%d"), X, Y)));
+                TextComp->SetWorldSize(CellSize * 0.18f);
+                TextComp->SetTextRenderColor(FColor(200, 200, 200, 200));
+                TextComp->SetHorizontalAlignment(EHTA_Center);
+                TextComp->SetVerticalAlignment(EVRTA_TextCenter);
+            }
+
+            CoordinateLabelActors.Add(TextActor);
+        }
+    }
+}
+
+void AEditorGridVisualizer::DestroyCoordinateLabels()
+{
+    for (ATextRenderActor* Actor : CoordinateLabelActors)
+    {
+        if (Actor && IsValid(Actor))
+        {
+            Actor->Destroy();
+        }
+    }
+    CoordinateLabelActors.Empty();
 }

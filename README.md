@@ -89,7 +89,7 @@
 - **Ice** — 铺设冰面
 - **Goal** — 放置目标点
 - **Door** — 放置门（需要关联压力板组）
-- **Pressure Plate** — 放置压力板
+- **Pressure Plate** — 放置压力板（自动归入当前选中组）
 - **Box Spawn** — 设置箱子初始位置
 - **Player Start** — 设置玩家出生点（唯一）
 - **Eraser** — 擦除地块
@@ -147,11 +147,13 @@
 
 教程系统需要感知玩家操作（移动、推箱子、开门等），但如果把教程逻辑嵌入 GameMode 或 Character，会让核心代码变得臃肿且难以关闭。
 
-我的做法是将教程管理器实现为 `UWorldSubsystem`（`TutorialSubsystem`），它独立于 GameMode 生命周期，不持有任何游戏逻辑，只通过 `NotifyCondition()` 等轻量通知接口接收外部事件。GameMode、Character、PushableBox、DoorMechanism 各自在关键时刻调用一行通知代码，教程系统据此判断是否推进——通知方对教程的存在完全无感。
+我的做法是引入中央事件总线 `UGameEventBus`（`UWorldSubsystem`），所有游戏逻辑事件（移动、推箱子、开门、步数变化等）通过 `FName` 标签和通用载荷 `FGameEventPayload` 统一广播。GridManager、Character、PushableBox、DoorMechanism 各自在关键时刻调用一行 `EventBus->Broadcast()` 即可——广播方完全不知道谁在监听。
+
+教程管理器 `TutorialSubsystem`（同样是 `UWorldSubsystem`）在 `OnWorldBeginPlay` 中订阅所有关心的事件标签，收到事件后自动映射到内部的 `ETutorialConditionType` 进行条件匹配。它不持有任何游戏逻辑，也不被任何游戏类直接引用（除了 GameMode 的初始配置和暂停/关闭这类命令式调用）。新增消费系统（如成就、数据统计）只需订阅 EventBus，无需修改任何广播方代码。
 
 触发条件和完成条件共用同一套 `FTutorialCondition` 结构体和 `ETutorialConditionType` 枚举，这意味着"玩家到达某格子"既可以作为显示教程的触发条件，也可以作为关闭教程的完成条件，不需要维护两套独立的条件系统。教程内容通过 DataAsset 配置，关卡设计者可以在编辑器中直接编辑每个关卡的教程步骤，无需修改任何代码。
 
-这套设计的通用性在编辑器适配中得到了验证：关卡编辑器通过已有的 `OnGameplayEvent` + `EventTag` 机制发送编辑器操作通知（如笔刷切换、放置格子、保存关卡等），无需新增任何枚举值或修改条件匹配逻辑，只需在 `LevelEditorGameMode` 中添加一行 `NotifyGameplayEvent` 调用即可接入。为避免编辑器场景下教程干扰光标和输入模式，`TutorialSubsystem` 通过 `bIsEditorTutorial` 标记跳过输入模式切换。
+这套设计的通用性在编辑器适配中得到了验证：关卡编辑器通过 EventBus 广播 `Editor.*` 标签事件（如 `Editor.BrushChanged`、`Editor.CellPainted`、`Editor.LevelSaved` 等），TutorialSubsystem 将其作为 `OnGameplayEvent` 条件匹配，无需新增任何枚举值或修改条件匹配逻辑。为避免编辑器场景下教程干扰光标和输入模式，`TutorialSubsystem` 通过 `bIsEditorTutorial` 标记跳过输入模式切换。
 
 ### 编辑器和游玩怎么共存？—— 分离 GameMode，共享数据
 

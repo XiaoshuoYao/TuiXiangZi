@@ -17,6 +17,7 @@ class UTileModifierComponent;
 struct FBoxData;
 class ASokobanCharacter;
 class UPushableBoxComponent;
+class UTeleporterMechanismComponent;
 
 UCLASS(BlueprintType)
 class TUIXIANGZI_API AGridManager : public AActor
@@ -92,6 +93,12 @@ public:
 
     // ===== Mechanism System =====
     void CheckAllPressurePlateGroups();
+
+    /** Check all teleporter pairs and teleport actors standing on active entries. */
+    void CheckTeleporters();
+
+    /** Find the paired teleporter for a given teleporter (same GroupId, different position). */
+    UTeleporterMechanismComponent* FindPairedTeleporter(UTeleporterMechanismComponent* Source) const;
 
     const TArray<UGridMechanismComponent*>& GetAllMechanisms() const { return AllMechanisms; }
     UGridMechanismComponent* GetMechanismAt(FIntPoint GridPos) const;

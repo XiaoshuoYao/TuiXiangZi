@@ -119,6 +119,7 @@ protected:
     void HandleShortcutLoad();
     void HandleShortcutTest();
     void HandleShortcutEsc();
+    void HandleToggleCoordinateLabels();
 
     /** Helper: attempt to set brush via MainWidget, respecting dialog/mode guards. */
     void TrySetBrush(EEditorBrush Brush);

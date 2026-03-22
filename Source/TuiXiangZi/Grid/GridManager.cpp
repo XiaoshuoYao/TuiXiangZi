@@ -10,6 +10,7 @@
 #include "Gameplay/Mechanisms/GridMechanismComponent.h"
 #include "Gameplay/Mechanisms/DoorMechanismComponent.h"
 #include "Gameplay/Mechanisms/GoalMechanismComponent.h"
+#include "Gameplay/Mechanisms/TeleporterMechanismComponent.h"
 #include "Gameplay/Modifiers/TileModifierComponent.h"
 #include "Gameplay/GroupColorIndicatorComponent.h"
 #include "DrawDebugHelpers.h"
@@ -350,6 +351,7 @@ FIntPoint AGridManager::CalculateIceSlideDestination(FIntPoint StartPos, EMoveDi
 void AGridManager::PostMoveSettlement()
 {
     CheckAllPressurePlateGroups();
+    CheckTeleporters();
     CheckGoalCondition();
 }
 
@@ -403,6 +405,61 @@ void AGridManager::CheckAllPressurePlateGroups()
                 MechCell->bDoorOpen = bAllActive;
         }
     }
+}
+
+void AGridManager::CheckTeleporters()
+{
+    UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>();
+
+    // Collect teleporters that have an occupying actor and can send
+    // Use a set to prevent infinite teleport chains
+    TSet<AActor*> AlreadyTeleported;
+
+    for (UGridMechanismComponent* M : AllMechanisms)
+    {
+        UTeleporterMechanismComponent* Teleporter = Cast<UTeleporterMechanismComponent>(M);
+        if (!Teleporter || !Teleporter->CanSend()) continue;
+
+        const FGridCell* Cell = GridCells.Find(Teleporter->GridPos);
+        if (!Cell || !Cell->OccupyingActor.IsValid()) continue;
+
+        AActor* Actor = Cell->OccupyingActor.Get();
+        if (AlreadyTeleported.Contains(Actor)) continue;
+
+        UTeleporterMechanismComponent* Dest = FindPairedTeleporter(Teleporter);
+        if (!Dest || !Dest->CanReceive()) continue;
+
+        // Check destination is not occupied
+        const FGridCell* DestCell = GridCells.Find(Dest->GridPos);
+        if (DestCell && DestCell->OccupyingActor.IsValid()) continue;
+
+        // Teleport: update occupancy
+        FIntPoint FromPos = Teleporter->GridPos;
+        FIntPoint ToPos = Dest->GridPos;
+        UpdateOccupancy(FromPos, ToPos, Actor);
+        AlreadyTeleported.Add(Actor);
+
+        // Broadcast teleported event
+        if (EventBus)
+        {
+            EventBus->Broadcast(GameEventTags::Teleported,
+                FGameEventPayload::MakeActorMoved(Actor, FromPos, ToPos));
+        }
+    }
+}
+
+UTeleporterMechanismComponent* AGridManager::FindPairedTeleporter(UTeleporterMechanismComponent* Source) const
+{
+    if (!Source || Source->GroupId < 0) return nullptr;
+
+    for (UGridMechanismComponent* M : AllMechanisms)
+    {
+        UTeleporterMechanismComponent* Other = Cast<UTeleporterMechanismComponent>(M);
+        if (!Other || Other == Source) continue;
+        if (Other->GroupId == Source->GroupId)
+            return Other;
+    }
+    return nullptr;
 }
 
 UGridMechanismComponent* AGridManager::GetMechanismAt(FIntPoint GridPos) const
@@ -657,7 +714,11 @@ void AGridManager::SpawnOrUpdateVisualActor(FIntPoint GridPos, const FGridCell& 
         Comp->GroupId = Cell.GroupId;
 
         if (UGridMechanismComponent* MechComp = Cast<UGridMechanismComponent>(Comp))
+        {
             AllMechanisms.Add(MechComp);
+            if (UTeleporterMechanismComponent* TeleComp = Cast<UTeleporterMechanismComponent>(MechComp))
+                TeleComp->SetRoleFromExtraParam(Cell.ExtraParam);
+        }
         if (UTileModifierComponent* ModComp = Cast<UTileModifierComponent>(Comp))
         {
             AllModifiers.Add(ModComp);

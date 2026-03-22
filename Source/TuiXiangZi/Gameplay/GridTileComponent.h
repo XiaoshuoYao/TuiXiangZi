@@ -12,7 +12,7 @@ enum class EEditorPlacementFlow : uint8
 {
 	None           UMETA(DisplayName = "None"),
 	AssignGroup    UMETA(DisplayName = "Assign Group"),
-	// PairPlacement  — future: teleporter pair placement
+	PairPlacement  UMETA(DisplayName = "Pair Placement"),
 };
 
 UCLASS(Abstract, Blueprintable, ClassGroup = "GridTile",

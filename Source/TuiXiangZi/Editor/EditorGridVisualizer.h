@@ -6,6 +6,7 @@
 
 class UProceduralMeshComponent;
 class UMaterialInstanceDynamic;
+class ATextRenderActor;
 
 UCLASS(Blueprintable)
 class TUIXIANGZI_API AEditorGridVisualizer : public AActor
@@ -17,6 +18,14 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Editor|Grid")
     void UpdateGridLines(FIntPoint MinBound, FIntPoint MaxBound, float InCellSize);
+
+    /** Toggle coordinate labels on each grid cell. */
+    UFUNCTION(BlueprintCallable, Category = "Editor|Grid")
+    void ToggleCoordinateLabels();
+
+    /** Whether coordinate labels are currently visible. */
+    UFUNCTION(BlueprintCallable, Category = "Editor|Grid")
+    bool AreCoordinateLabelsVisible() const { return bShowCoordinateLabels; }
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Editor|Grid")
@@ -37,6 +46,15 @@ protected:
 
     UPROPERTY()
     UMaterialInstanceDynamic* GridLineMaterial;
+
+    // ===== Coordinate Labels =====
+    bool bShowCoordinateLabels = false;
+
+    UPROPERTY()
+    TArray<ATextRenderActor*> CoordinateLabelActors;
+
+    void RebuildCoordinateLabels();
+    void DestroyCoordinateLabels();
 
     void AddLineQuad(FVector Start, FVector End, float Thickness,
         TArray<FVector>& Vertices, TArray<int32>& Triangles,

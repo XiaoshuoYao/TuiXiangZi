@@ -46,13 +46,14 @@ Source/TuiXiangZi/
   - `DoorMechanismComponent` — blocks passage when closed, animated open/close, activated by pressure plate groups.
   - `PressurePlateMechanismComponent` — triggers group activation when occupied by a box.
   - `GoalMechanismComponent` — win condition marker.
+  - `TeleporterMechanismComponent` — paired one-to-one via group system, supports bidirectional/unidirectional (ExtraParam: 0=Bidirectional, 1=Entry, 2=Exit).
 
 ### 5. Level Data (`LevelData/`)
 - **LevelDataTypes** — `FLevelData` (cells, player start, group styles), `FCellData`, `FBoxData`, `FMechanismGroupStyleData`.
 - **LevelSerializer** — JSON serialization/deserialization, file discovery.
 
 ### 6. Editor (`Editor/`)
-- **LevelEditorGameMode** — Brush system (9 brushes), editor modes, group management, validation, save/load/test. Broadcasts editor events via `UGameEventBus` (`Editor.*` tags).
+- **LevelEditorGameMode** — Brush system (10 brushes), editor modes, group management (door plates + teleporter pairs), validation, save/load/test. Broadcasts editor events via `UGameEventBus` (`Editor.*` tags).
 - **EditorGridVisualizer** — Procedural mesh grid lines.
 - **LevelEditorPawn** — Editor input handling, dialog management.
 
@@ -73,6 +74,7 @@ Source/TuiXiangZi/
 Player Input → SokobanCharacter::OnMoveInput → GridManager::TryMoveActor
 → Validate (IsCellPassable, CanPushBoxTo) → Update occupancy → Broadcast OnActorLogicalMoved
 → Animate (Timeline) → CaptureSnapshot (undo) → IncrementSteps → CheckGoalCondition
+→ (if on Teleporter) CheckTeleporters → Broadcast Teleported → SnapToGridPos
 ```
 
 ### Level Load

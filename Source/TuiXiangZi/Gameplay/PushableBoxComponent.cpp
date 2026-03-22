@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Events/GameEventBus.h"
 #include "Events/GameEventTags.h"
+#include "Gameplay/Modifiers/TileModifierComponent.h"
 
 UStaticMeshComponent* UPushableBoxComponent::FindOwnerMeshComp() const
 {
@@ -62,6 +63,7 @@ void UPushableBoxComponent::BeginPlay()
 	if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
 	{
 		EventBus->Subscribe(GameEventTags::ActorMoved, FOnGameEvent::FDelegate::CreateUObject(this, &UPushableBoxComponent::OnActorMovedEvent));
+		EventBus->Subscribe(GameEventTags::Teleported, FOnGameEvent::FDelegate::CreateUObject(this, &UPushableBoxComponent::OnTeleportedEvent));
 	}
 }
 
@@ -130,6 +132,32 @@ void UPushableBoxComponent::OnActorMovedEvent(FName EventTag, const FGameEventPa
 	CurrentGridPos = Payload.ToPos;
 	if (GridManagerRef)
 	{
+		// 检测冰面滑行：起始格和目标格都有冰面 Modifier 时才加速（排除离开冰面的情况）
+		bool bOnIce = false;
+		UTileModifierComponent* FromMod = GridManagerRef->GetModifierAt(Payload.FromPos);
+		UTileModifierComponent* ToMod = GridManagerRef->GetModifierAt(Payload.ToPos);
+		if (FromMod && FromMod->ShouldContinueMovement(EMoveDirection::Up)
+			&& ToMod && ToMod->ShouldContinueMovement(EMoveDirection::Up))
+		{
+			bOnIce = true;
+		}
+
+		// 根据是否在冰面调整 Timeline 播放速率
+		if (MoveTimeline)
+		{
+			if (bOnIce)
+			{
+				float Dist = FVector::Dist2D(GetOwner()->GetActorLocation(), GridManagerRef->GridToWorld(Payload.ToPos));
+				float Cells = FMath::Max(Dist / FMath::Max(GridManagerRef->CellSize, 1.0f), 1.0f);
+				float Duration = (MoveDuration * Cells) / IceSlideSpeedMultiplier;
+				MoveTimeline->SetPlayRate(1.0f / FMath::Max(Duration, 0.01f));
+			}
+			else
+			{
+				MoveTimeline->SetPlayRate(1.0f / MoveDuration);
+			}
+		}
+
 		SmoothMoveTo(GridManagerRef->GridToWorld(Payload.ToPos));
 	}
 
@@ -138,6 +166,12 @@ void UPushableBoxComponent::OnActorMovedEvent(FName EventTag, const FGameEventPa
 	{
 		EventBus->Broadcast(GameEventTags::PushedBox);
 	}
+}
+
+void UPushableBoxComponent::OnTeleportedEvent(FName EventTag, const FGameEventPayload& Payload)
+{
+	if (Payload.Actor.Get() != GetOwner()) return;
+	SnapToGridPos(Payload.ToPos);
 }
 
 void UPushableBoxComponent::PlayFallIntoHoleAnim()

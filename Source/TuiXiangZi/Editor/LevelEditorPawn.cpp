@@ -1,6 +1,7 @@
 #include "Editor/LevelEditorPawn.h"
 #include "Grid/GridManager.h"
 #include "Editor/LevelEditorGameMode.h"
+#include "Editor/EditorGridVisualizer.h"
 #include "Editor/EditorBrushTypes.h"
 #include "UI/Editor/EditorMainWidget.h"
 #include "Camera/CameraComponent.h"
@@ -162,6 +163,7 @@ void ALevelEditorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
     PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ALevelEditorPawn::HandleShortcutEsc);
     PlayerInputComponent->BindKey(EKeys::F5,     IE_Pressed, this, &ALevelEditorPawn::HandleShortcutTest);
+    PlayerInputComponent->BindKey(EKeys::G,      IE_Pressed, this, &ALevelEditorPawn::HandleToggleCoordinateLabels);
 
     // Ctrl+key combos: use FInputChord via BindKey
     FInputKeyBinding& BindNew = PlayerInputComponent->KeyBindings.Add_GetRef(
@@ -458,5 +460,22 @@ void ALevelEditorPawn::HandleShortcutEsc()
     if (MainWidget)
     {
         MainWidget->HandleEscPressed();
+    }
+}
+
+void ALevelEditorPawn::HandleToggleCoordinateLabels()
+{
+    if (MainWidget && MainWidget->IsDialogOpen()) return;
+
+    ALevelEditorGameMode* EditorGM = Cast<ALevelEditorGameMode>(
+        UGameplayStatics::GetGameMode(GetWorld()));
+    if (!EditorGM) return;
+
+    // Find the EditorGridVisualizer in the world
+    AEditorGridVisualizer* Visualizer = Cast<AEditorGridVisualizer>(
+        UGameplayStatics::GetActorOfClass(GetWorld(), AEditorGridVisualizer::StaticClass()));
+    if (Visualizer)
+    {
+        Visualizer->ToggleCoordinateLabels();
     }
 }

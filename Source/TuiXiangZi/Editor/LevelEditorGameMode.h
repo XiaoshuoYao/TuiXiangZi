@@ -106,6 +106,15 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Editor")
     void CancelPlacementMode();
 
+    // ===== Teleporter =====
+    /** Cycle the directionality of a teleporter pair: Bidirectional → A→B → B→A → Bidirectional. */
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    void CycleTeleporterDirection(int32 GroupId);
+
+    /** Get human-readable direction string for a teleporter group. */
+    UFUNCTION(BlueprintCallable, Category = "Editor")
+    FString GetTeleporterDirectionText(int32 GroupId) const;
+
     // ===== Safety Checks =====
     UFUNCTION(BlueprintCallable, Category = "Editor")
     bool ShouldConfirmErase(FIntPoint GridPos) const;
@@ -207,6 +216,8 @@ protected:
     void NotifyEditorTutorialEvent(FName EventTag);
 
     FString PendingRestoreJsonPath;
+    FLevelData PendingRestoreData;
+    bool bHasPendingRestore = false;
 
     void RestoreFromLevelData(const FLevelData& Data);
 
@@ -219,6 +230,9 @@ protected:
 
     /** Handle click during PlacingPlatesForDoor / EditingDoorGroup modes. */
     void HandlePlateModePaint(FIntPoint Pos);
+
+    /** Handle click during PlacingTeleporterPair mode. */
+    void HandleTeleporterPairPaint(FIntPoint Pos);
 
     /** After placing a cell, check spawned actor's components for editor placement flows. */
     void ApplyPostPaintFlow(FIntPoint Pos);

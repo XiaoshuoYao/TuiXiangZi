@@ -11,6 +11,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Events/GameEventBus.h"
 #include "Events/GameEventTags.h"
+#include "Gameplay/Modifiers/TileModifierComponent.h"
 
 ASokobanCharacter::ASokobanCharacter()
 {
@@ -63,6 +64,7 @@ void ASokobanCharacter::BeginPlay()
         if (UGameEventBus* EventBus = GetWorld()->GetSubsystem<UGameEventBus>())
         {
             EventBus->Subscribe(GameEventTags::ActorMoved, FOnGameEvent::FDelegate::CreateUObject(this, &ASokobanCharacter::OnActorMovedEvent));
+            EventBus->Subscribe(GameEventTags::Teleported, FOnGameEvent::FDelegate::CreateUObject(this, &ASokobanCharacter::OnTeleportedEvent));
         }
     }
 
@@ -101,22 +103,41 @@ void ASokobanCharacter::Tick(float DeltaTime)
 
     if (!bIsMoving) return;
 
-    float Dist = FVector::DistXY(GetActorLocation(), MoveTargetLocation);
-    const float SnapThreshold = 5.0f;
-
-    if (Dist < SnapThreshold)
+    if (bIsSliding)
     {
-        // 到达：精确吸附到格子中心
-        FVector SnapPos = MoveTargetLocation;
-        SnapPos.Z = GetActorLocation().Z;
-        SetActorLocation(SnapPos);
-        bIsMoving = false;
-        GetCharacterMovement()->StopMovementImmediately();
+        // 冰面滑行：直接插值位置，不驱动 CMC（不播放走路动画）
+        SlideElapsed += DeltaTime;
+        float Alpha = FMath::Clamp(SlideElapsed / FMath::Max(SlideTotalDuration, 0.001f), 0.0f, 1.0f);
+        FVector NewPos = FMath::Lerp(MoveStartLocation, MoveTargetLocation, Alpha);
+        NewPos.Z = GetActorLocation().Z;
+        SetActorLocation(NewPos);
+
+        if (Alpha >= 1.0f)
+        {
+            bIsMoving = false;
+            bIsSliding = false;
+            GetCharacterMovement()->StopMovementImmediately();
+        }
     }
     else
     {
-        // 驱动 CMC 向目标移动，ABP_Manny 自动获得速度和加速度
-        AddMovementInput(MoveDirection, 1.0f);
+        float Dist = FVector::DistXY(GetActorLocation(), MoveTargetLocation);
+        const float SnapThreshold = 5.0f;
+
+        if (Dist < SnapThreshold)
+        {
+            // 到达：精确吸附到格子中心
+            FVector SnapPos = MoveTargetLocation;
+            SnapPos.Z = GetActorLocation().Z;
+            SetActorLocation(SnapPos);
+            bIsMoving = false;
+            GetCharacterMovement()->StopMovementImmediately();
+        }
+        else
+        {
+            // 驱动 CMC 向目标移动，ABP_Manny 自动获得速度和加速度
+            AddMovementInput(MoveDirection, 1.0f);
+        }
     }
 }
 
@@ -226,6 +247,7 @@ void ASokobanCharacter::SnapToGridPos(FIntPoint GridPos)
 
     // Reset movement state to prevent stale animation from previous level
     bIsMoving = false;
+    bIsSliding = false;
     MoveDirection = FVector::ZeroVector;
     GetCharacterMovement()->StopMovementImmediately();
 
@@ -243,6 +265,12 @@ void ASokobanCharacter::SnapToGridPos(FIntPoint GridPos)
     }
 }
 
+void ASokobanCharacter::OnTeleportedEvent(FName EventTag, const FGameEventPayload& Payload)
+{
+    if (Payload.Actor.Get() != this) return;
+    SnapToGridPos(Payload.ToPos);
+}
+
 void ASokobanCharacter::OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload)
 {
     if (Payload.Actor.Get() != this) return;
@@ -250,9 +278,30 @@ void ASokobanCharacter::OnActorMovedEvent(FName EventTag, const FGameEventPayloa
     CurrentGridPos = Payload.ToPos;
     if (GridManagerRef)
     {
+        MoveStartLocation = GetActorLocation();
         MoveTargetLocation = GridManagerRef->GridToWorld(Payload.ToPos);
         MoveTargetLocation.Z = GetActorLocation().Z;
         MoveDirection = (MoveTargetLocation - GetActorLocation()).GetSafeNormal2D();
         bIsMoving = true;
+
+        // 检测冰面滑行：起始格和目标格都有冰面 Modifier 时才用滑行模式（排除离开冰面的情况）
+        UTileModifierComponent* FromMod = GridManagerRef->GetModifierAt(Payload.FromPos);
+        UTileModifierComponent* ToMod = GridManagerRef->GetModifierAt(Payload.ToPos);
+        if (FromMod && FromMod->ShouldContinueMovement(EMoveDirection::Up)
+            && ToMod && ToMod->ShouldContinueMovement(EMoveDirection::Up))
+        {
+            bIsSliding = true;
+            float Dist = FVector::Dist2D(MoveStartLocation, MoveTargetLocation);
+            float NormalSpeed = GridManagerRef->CellSize / FMath::Max(MoveDuration, 0.01f);
+            float SlideSpeed = NormalSpeed * IceSlideSpeedMultiplier;
+            SlideTotalDuration = Dist / FMath::Max(SlideSpeed, 1.0f);
+            SlideElapsed = 0.0f;
+            // 停止 CMC，避免走路动画
+            GetCharacterMovement()->StopMovementImmediately();
+        }
+        else
+        {
+            bIsSliding = false;
+        }
     }
 }

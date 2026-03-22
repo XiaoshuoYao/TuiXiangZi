@@ -15,6 +15,7 @@ enum class EEditorBrush : uint8
     PressurePlate,
     BoxSpawn,
     PlayerStart,
+    Teleporter,
     Eraser
 };
 
@@ -23,7 +24,8 @@ enum class EEditorMode : uint8
 {
     Normal,
     PlacingPlatesForDoor,
-    EditingDoorGroup
+    EditingDoorGroup,
+    PlacingTeleporterPair
 };
 
 UENUM(BlueprintType)

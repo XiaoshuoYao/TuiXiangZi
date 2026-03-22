@@ -14,6 +14,7 @@ enum class EGridCellType : uint8
     Goal            UMETA(DisplayName = "Goal"),
     Door            UMETA(DisplayName = "Door"),
     Box             UMETA(DisplayName = "Box"),
+    Teleporter      UMETA(DisplayName = "Teleporter"),
 };
 
 UENUM(BlueprintType)

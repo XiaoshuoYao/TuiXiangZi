@@ -30,8 +30,14 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
     bool bIsMoving = false;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+    bool bIsSliding = false;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float MoveDuration = 0.15f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float IceSlideSpeedMultiplier = 2.0f;
 
     void SnapToGridPos(FIntPoint GridPos);
 
@@ -63,10 +69,14 @@ protected:
     void OnUndo(const struct FInputActionValue& Value);
 
     // ===== 网格移动 =====
+    FVector MoveStartLocation;
     FVector MoveTargetLocation;
     FVector MoveDirection;
+    float SlideElapsed = 0.0f;
+    float SlideTotalDuration = 0.0f;
 
     void OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload);
+    void OnTeleportedEvent(FName EventTag, const FGameEventPayload& Payload);
 
     // ===== 相机 =====
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")

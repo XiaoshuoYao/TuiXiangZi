@@ -14,6 +14,7 @@ namespace GameEventTags
 	inline const FName Undone             = TEXT("Player.Undone");
 	inline const FName Reset              = TEXT("Player.Reset");
 	inline const FName DoorOpened         = TEXT("Mechanism.DoorOpened");
+	inline const FName Teleported         = TEXT("Mechanism.Teleported");
 	inline const FName EditorBrushChanged = TEXT("Editor.BrushChanged");
 	inline const FName EditorCellPainted  = TEXT("Editor.CellPainted");
 	inline const FName EditorCellErased   = TEXT("Editor.CellErased");

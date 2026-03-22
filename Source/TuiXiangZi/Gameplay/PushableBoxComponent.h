@@ -33,6 +33,9 @@ public:
 	float MoveDuration = 0.15f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float IceSlideSpeedMultiplier = 2.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	UCurveFloat* MoveCurve;
 
 	void SnapToGridPos(FIntPoint GridPos);
@@ -62,4 +65,5 @@ protected:
 	void OnMoveTimelineFinished();
 
 	void OnActorMovedEvent(FName EventTag, const FGameEventPayload& Payload);
+	void OnTeleportedEvent(FName EventTag, const FGameEventPayload& Payload);
 };

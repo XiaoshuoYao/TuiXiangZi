@@ -15,6 +15,7 @@ static const FCellTypeDescriptor GCellTypeDescriptors[] =
     { EGridCellType::Goal,          TEXT("Goal"),           true,     true,          true  },
     { EGridCellType::Door,          TEXT("Door"),           false,    true,          false }, // passability 由运行时 bDoorOpen 覆盖
     { EGridCellType::Box,           TEXT("Box"),            true,     true,          true  },
+    { EGridCellType::Teleporter,    TEXT("Teleporter"),     true,     true,          true  },
 };
 
 namespace GridTypeUtils

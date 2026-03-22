@@ -31,6 +31,30 @@ void ALevelEditorGameMode::InitGame(const FString& MapName, const FString& Optio
 {
     Super::InitGame(MapName, Options, ErrorMessage);
     PendingRestoreJsonPath = UGameplayStatics::ParseOption(Options, TEXT("RestoreJson"));
+
+    // Pre-load level data and restore editor-state (non-visual) so that UI
+    // widgets can read GroupStyles regardless of BeginPlay ordering.
+    if (!PendingRestoreJsonPath.IsEmpty())
+    {
+        if (ULevelSerializer::LoadFromJson(PendingRestoreJsonPath, PendingRestoreData))
+        {
+            bHasPendingRestore = true;
+
+            GroupStyles = PendingRestoreData.GroupStyles;
+            PlayerStartPos = PendingRestoreData.PlayerStart;
+            MaxGroupId = 0;
+            for (const FCellData& CellData : PendingRestoreData.Cells)
+            {
+                if (CellData.GroupId > MaxGroupId) MaxGroupId = CellData.GroupId;
+            }
+            for (const FMechanismGroupStyleData& GS : GroupStyles)
+            {
+                if (GS.GroupId > MaxGroupId) MaxGroupId = GS.GroupId;
+            }
+            CurrentGroupId = 0;
+            CurrentMode = EEditorMode::Normal;
+        }
+    }
 }
 
 void ALevelEditorGameMode::BeginPlay()
@@ -58,18 +82,14 @@ void ALevelEditorGameMode::BeginPlay()
     }
 
     // Restore editor state if returning from test, otherwise create new level
-    if (!PendingRestoreJsonPath.IsEmpty())
+    if (bHasPendingRestore)
     {
-        FLevelData Data;
-        if (ULevelSerializer::LoadFromJson(PendingRestoreJsonPath, Data))
-        {
-            RestoreFromLevelData(Data);
-            bIsDirty = true;
-        }
-        else
-        {
-            NewLevel(8, 6);
-        }
+        // Data-only state (GroupStyles, PlayerStartPos, MaxGroupId) was already
+        // restored in InitGame; now perform the visual/world restoration.
+        RestoreFromLevelData(PendingRestoreData);
+        bIsDirty = true;
+        bHasPendingRestore = false;
+        PendingRestoreData = FLevelData();
     }
     else
     {
@@ -150,6 +170,12 @@ void ALevelEditorGameMode::CancelPlacementMode()
             UE_LOG(LogTemp, Warning, TEXT("Editor: Door group %d has no plates!"), CurrentGroupId);
         }
     }
+    else if (CurrentMode == EEditorMode::PlacingTeleporterPair)
+    {
+        // Incomplete pair — delete the group (removes the first teleporter)
+        UE_LOG(LogTemp, Warning, TEXT("Editor: Teleporter pair for group %d cancelled, removing first teleporter."), CurrentGroupId);
+        DeleteGroup(CurrentGroupId);
+    }
     SetEditorMode(EEditorMode::Normal);
 }
 
@@ -165,10 +191,15 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
 {
     if (!GridManagerRef) return;
 
-    // If in plate placement mode, handle differently
+    // If in special placement mode, handle differently
     if (CurrentMode == EEditorMode::PlacingPlatesForDoor || CurrentMode == EEditorMode::EditingDoorGroup)
     {
         HandlePlateModePaint(Pos);
+        return;
+    }
+    if (CurrentMode == EEditorMode::PlacingTeleporterPair)
+    {
+        HandleTeleporterPairPaint(Pos);
         return;
     }
 
@@ -201,6 +232,15 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
         Cell.VisualStyleId = CurrentVisualStyleId;
         GridManagerRef->SetCell(Pos, Cell);
         GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+        break;
+    }
+    case EEditorBrush::Teleporter:
+    {
+        FGridCell Cell;
+        Cell.CellType = EGridCellType::Teleporter;
+        Cell.VisualStyleId = CurrentVisualStyleId;
+        GridManagerRef->SetCell(Pos, Cell);
+        ApplyPostPaintFlow(Pos);
         break;
     }
     case EEditorBrush::BoxSpawn:
@@ -447,6 +487,33 @@ FLevelValidationResult ALevelEditorGameMode::ValidateLevel() const
         }
     }
 
+    // Warning: Incomplete teleporter pairs
+    if (GridManagerRef)
+    {
+        TMap<int32, int32> TeleporterGroupCounts;
+        FIntRect TBounds = GridManagerRef->GetGridBounds();
+        for (int32 Y = TBounds.Min.Y; Y < TBounds.Max.Y; ++Y)
+        {
+            for (int32 X = TBounds.Min.X; X < TBounds.Max.X; ++X)
+            {
+                FIntPoint Pos(X, Y);
+                if (!GridManagerRef->HasCell(Pos)) continue;
+                FGridCell Cell = GridManagerRef->GetCell(Pos);
+                if (Cell.CellType == EGridCellType::Teleporter && Cell.GroupId >= 0)
+                    TeleporterGroupCounts.FindOrAdd(Cell.GroupId)++;
+            }
+        }
+        for (const auto& Pair : TeleporterGroupCounts)
+        {
+            if (Pair.Value != 2)
+            {
+                Result.Warnings.Add(FString::Printf(
+                    TEXT("Teleporter group %d has %d teleporter(s) (expected exactly 2)!"),
+                    Pair.Key, Pair.Value));
+            }
+        }
+    }
+
     // Warning: No boxes
     if (GetBoxCount() == 0)
     {
@@ -592,7 +659,7 @@ void ALevelEditorGameMode::RestoreFromLevelData(const FLevelData& Data)
 void ALevelEditorGameMode::TestCurrentLevel()
 {
     FLevelData Data = BuildLevelData();
-    FString TempFilePath = ULevelSerializer::GetDefaultLevelDirectory() / TEXT("_temp_editor_test.json");
+    FString TempFilePath = ULevelSerializer::GetDefaultLevelDirectory() / TEXT("AutoSaved.json");
     ULevelSerializer::SaveToJson(Data, TempFilePath);
 
     NotifyEditorTutorialEvent(GameEventTags::EditorLevelTested);
@@ -765,6 +832,16 @@ void ALevelEditorGameMode::ApplyPostPaintFlow(FIntPoint Pos)
             UE_LOG(LogTemp, Log, TEXT("Editor: Placed group anchor for group %d. Click to place plates, Esc to finish."), NewGroupId);
             break;
         }
+        if (Flow == EEditorPlacementFlow::PairPlacement)
+        {
+            int32 NewGroupId = CreateNewGroup();
+            GridManagerRef->SetCellGroupId(Pos, NewGroupId);
+            CurrentGroupId = NewGroupId;
+            GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+            SetEditorMode(EEditorMode::PlacingTeleporterPair);
+            UE_LOG(LogTemp, Log, TEXT("Editor: Placed first teleporter for group %d. Click to place the paired teleporter."), NewGroupId);
+            break;
+        }
     }
 }
 
@@ -780,7 +857,7 @@ bool ALevelEditorGameMode::IsGroupAnchor(FIntPoint Pos) const
 
     for (const UGridTileComponent* Comp : TileComps)
     {
-        if (Comp->GetEditorPlacementFlow() == EEditorPlacementFlow::AssignGroup)
+        if (Comp->GetEditorPlacementFlow() != EEditorPlacementFlow::None)
             return true;
     }
     return false;
@@ -801,6 +878,116 @@ FLinearColor ALevelEditorGameMode::GetDefaultGroupColor(int32 GroupId) const
     return Colors[(GroupId - 1) % ColorCount];
 }
 
+void ALevelEditorGameMode::HandleTeleporterPairPaint(FIntPoint Pos)
+{
+    if (!GridManagerRef) return;
+
+    // Don't allow placing on the same cell as the first teleporter
+    if (GridManagerRef->HasCell(Pos))
+    {
+        FGridCell ExistingCell = GridManagerRef->GetCell(Pos);
+        if (ExistingCell.CellType == EGridCellType::Teleporter && ExistingCell.GroupId == CurrentGroupId)
+            return;
+        // Only place on empty or floor cells
+        if (ExistingCell.CellType != EGridCellType::Floor)
+            return;
+    }
+
+    // Place second teleporter in the same group
+    FGridCell Cell;
+    Cell.CellType = EGridCellType::Teleporter;
+    Cell.GroupId = CurrentGroupId;
+    Cell.VisualStyleId = CurrentVisualStyleId;
+    GridManagerRef->SetCell(Pos, Cell);
+    GridManagerRef->SetCellGroupId(Pos, CurrentGroupId);
+    GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+
+    SetEditorMode(EEditorMode::Normal);
+    UE_LOG(LogTemp, Log, TEXT("Editor: Teleporter pair for group %d complete."), CurrentGroupId);
+    bIsDirty = true;
+    UpdateGridVisualizerBounds();
+}
+
+void ALevelEditorGameMode::CycleTeleporterDirection(int32 GroupId)
+{
+    if (!GridManagerRef) return;
+
+    // Find the two teleporter cells in this group
+    TArray<FIntPoint> TeleporterPositions;
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+    {
+        for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+        {
+            FIntPoint Pos(X, Y);
+            if (!GridManagerRef->HasCell(Pos)) continue;
+            FGridCell Cell = GridManagerRef->GetCell(Pos);
+            if (Cell.CellType == EGridCellType::Teleporter && Cell.GroupId == GroupId)
+                TeleporterPositions.Add(Pos);
+        }
+    }
+
+    if (TeleporterPositions.Num() != 2) return;
+
+    FGridCell CellA = GridManagerRef->GetCell(TeleporterPositions[0]);
+    FGridCell CellB = GridManagerRef->GetCell(TeleporterPositions[1]);
+
+    // Cycle: Both 0 (Bi) → A=1,B=2 (A→B) → A=2,B=1 (B→A) → Both 0 (Bi)
+    if (CellA.ExtraParam == 0 && CellB.ExtraParam == 0)
+    {
+        CellA.ExtraParam = 1; // Entry
+        CellB.ExtraParam = 2; // Exit
+    }
+    else if (CellA.ExtraParam == 1 && CellB.ExtraParam == 2)
+    {
+        CellA.ExtraParam = 2; // Exit
+        CellB.ExtraParam = 1; // Entry
+    }
+    else
+    {
+        CellA.ExtraParam = 0; // Bidirectional
+        CellB.ExtraParam = 0;
+    }
+
+    GridManagerRef->SetCell(TeleporterPositions[0], CellA);
+    GridManagerRef->SetCell(TeleporterPositions[1], CellB);
+    GridManagerRef->SetCellGroupId(TeleporterPositions[0], GroupId);
+    GridManagerRef->SetCellGroupId(TeleporterPositions[1], GroupId);
+    GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+    bIsDirty = true;
+}
+
+FString ALevelEditorGameMode::GetTeleporterDirectionText(int32 GroupId) const
+{
+    if (!GridManagerRef) return TEXT("N/A");
+
+    TArray<FIntPoint> Positions;
+    FIntRect Bounds = GridManagerRef->GetGridBounds();
+    for (int32 Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
+    {
+        for (int32 X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+        {
+            FIntPoint Pos(X, Y);
+            if (!GridManagerRef->HasCell(Pos)) continue;
+            FGridCell Cell = GridManagerRef->GetCell(Pos);
+            if (Cell.CellType == EGridCellType::Teleporter && Cell.GroupId == GroupId)
+                Positions.Add(Pos);
+        }
+    }
+
+    if (Positions.Num() != 2) return TEXT("Incomplete");
+
+    FGridCell CellA = GridManagerRef->GetCell(Positions[0]);
+    if (CellA.ExtraParam == 0)
+        return FString::Printf(TEXT("双向 (%d,%d) ↔ (%d,%d)"),
+            Positions[0].X, Positions[0].Y, Positions[1].X, Positions[1].Y);
+    if (CellA.ExtraParam == 1)
+        return FString::Printf(TEXT("单向 (%d,%d) → (%d,%d)"),
+            Positions[0].X, Positions[0].Y, Positions[1].X, Positions[1].Y);
+    return FString::Printf(TEXT("单向 (%d,%d) → (%d,%d)"),
+        Positions[1].X, Positions[1].Y, Positions[0].X, Positions[0].Y);
+}
+
 FString ALevelEditorGameMode::GetStatusText() const
 {
     FString ModeStr;
@@ -814,6 +1001,9 @@ FString ALevelEditorGameMode::GetStatusText() const
         break;
     case EEditorMode::EditingDoorGroup:
         ModeStr = FString::Printf(TEXT("Editing Group %d (Esc to finish)"), CurrentGroupId);
+        break;
+    case EEditorMode::PlacingTeleporterPair:
+        ModeStr = FString::Printf(TEXT("Place 2nd Teleporter for Group %d (Esc to cancel)"), CurrentGroupId);
         break;
     }
 
