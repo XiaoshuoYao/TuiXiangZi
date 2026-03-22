@@ -209,13 +209,38 @@ void ALevelEditorGameMode::PaintAtGrid(FIntPoint Pos)
     case EEditorBrush::Wall:
     case EEditorBrush::Ice:
     case EEditorBrush::Goal:
-    case EEditorBrush::Door:
     {
         FGridCell Cell;
         Cell.CellType = BrushToCellType(CurrentBrush);
         Cell.VisualStyleId = CurrentVisualStyleId;
         GridManagerRef->SetCell(Pos, Cell);
         ApplyPostPaintFlow(Pos);
+        break;
+    }
+    case EEditorBrush::Door:
+    {
+        // If a valid door group is selected, add this door to that group directly
+        bool bAddToExistingGroup = false;
+        if (CurrentGroupId > 0 && !IsGroupTeleporter(CurrentGroupId))
+        {
+            bAddToExistingGroup = GroupStyles.ContainsByPredicate(
+                [this](const FMechanismGroupStyleData& GS) { return GS.GroupId == CurrentGroupId; });
+        }
+
+        FGridCell Cell;
+        Cell.CellType = EGridCellType::Door;
+        Cell.VisualStyleId = CurrentVisualStyleId;
+        if (bAddToExistingGroup)
+        {
+            Cell.GroupId = CurrentGroupId;
+            GridManagerRef->SetCell(Pos, Cell);
+            GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+        }
+        else
+        {
+            GridManagerRef->SetCell(Pos, Cell);
+            ApplyPostPaintFlow(Pos);
+        }
         break;
     }
     case EEditorBrush::PressurePlate:
@@ -306,8 +331,22 @@ void ALevelEditorGameMode::HandlePlateModePaint(FIntPoint Pos)
         FGridCell ExistingCell = GridManagerRef->GetCell(Pos);
         if (ExistingCell.CellType != EGridCellType::Floor)
         {
-            return; // Can only place plates on floor
+            return; // Can only place plates or doors on floor
         }
+    }
+
+    // If door brush is active, place a door assigned to the current group
+    if (CurrentBrush == EEditorBrush::Door)
+    {
+        FGridCell Cell;
+        Cell.CellType = EGridCellType::Door;
+        Cell.GroupId = CurrentGroupId;
+        Cell.VisualStyleId = CurrentVisualStyleId;
+        GridManagerRef->SetCell(Pos, Cell);
+        GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+        BroadcastGridBoundsChanged();
+        bIsDirty = true;
+        return;
     }
 
     // Place pressure plate with current group
@@ -828,6 +867,7 @@ void ALevelEditorGameMode::ApplyPostPaintFlow(FIntPoint Pos)
             GridManagerRef->SetCellGroupId(Pos, NewGroupId);
             CurrentGroupId = NewGroupId;
             GridManagerRef->ApplyMechanismGroupStyles(GroupStyles);
+            SetCurrentBrush(EEditorBrush::PressurePlate);
             SetEditorMode(EEditorMode::PlacingPlatesForDoor);
             UE_LOG(LogTemp, Log, TEXT("Editor: Placed group anchor for group %d. Click to place plates, Esc to finish."), NewGroupId);
             break;

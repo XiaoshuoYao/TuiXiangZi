@@ -306,6 +306,16 @@ void UEditorMainWidget::HandleGroupMgrSelectGroup(int32 GroupId)
 {
 	if (GameMode)
 	{
+		// Toggle: clicking the already-selected group deselects it
+		if (GameMode->GetCurrentGroupId() == GroupId)
+		{
+			GameMode->SetCurrentGroupId(0);
+			if (GroupManager)
+			{
+				GroupManager->RefreshActiveGroup(0);
+			}
+			return;
+		}
 		GameMode->SetCurrentGroupId(GroupId);
 	}
 	if (GroupManager)

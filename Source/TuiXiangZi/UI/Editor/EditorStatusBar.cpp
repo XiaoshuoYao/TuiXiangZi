@@ -34,7 +34,7 @@ void UEditorStatusBar::RefreshModeText(EEditorMode Mode)
 		break;
 
 	case EEditorMode::PlacingPlatesForDoor:
-		ModeText->SetText(FText::FromString(TEXT("放置压力板 — 右键结束")));
+		ModeText->SetText(FText::FromString(TEXT("放置额外的门或压力板 — 右键结束")));
 		ModeText->SetColorAndOpacity(FLinearColor(1.0f, 0.85f, 0.0f));
 		if (BlinkAnimation && !bIsBlinking)
 		{

@@ -249,16 +249,19 @@ void UEditorSidebarWidget::InitializeWithCatalog(UTileStyleCatalog* Catalog)
 // ============================================================
 void UEditorSidebarWidget::EnterPlateMode()
 {
-	// Disable brush buttons so user can't switch brush
-	for (UButton* Btn : BrushButtons)
+	// Disable brush buttons, but keep Door and PressurePlate enabled
+	// so user can freely add doors or plates to the current group
+	for (int32 i = 0; i < BrushButtons.Num(); ++i)
 	{
-		if (Btn)
+		if (BrushButtons[i])
 		{
-			Btn->SetIsEnabled(false);
+			bool bKeepEnabled = (i < BrushOrder.Num() &&
+				(BrushOrder[i] == EEditorBrush::Door || BrushOrder[i] == EEditorBrush::PressurePlate));
+			BrushButtons[i]->SetIsEnabled(bKeepEnabled);
 		}
 	}
 
-	// Show pressure plate variants
+	// Show pressure plate variants by default
 	RefreshVariantPanel(EEditorBrush::PressurePlate);
 }
 

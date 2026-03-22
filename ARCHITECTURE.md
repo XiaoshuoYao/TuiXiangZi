@@ -45,7 +45,7 @@ Source/TuiXiangZi/
 - **GroupColorIndicatorComponent** — Blueprintable group color display. BP subclasses override `OnUpdateVisual` for custom visuals. Auto-notified by GridManager and GridMechanismComponent.
 - **Mechanisms** (component-based, attached to TileActor):
   - `GridMechanismComponent` (abstract base) — activation, passability, group roles, editor placement flow.
-  - `DoorMechanismComponent` — blocks passage when closed, animated open/close, activated by pressure plate groups.
+  - `DoorMechanismComponent` — blocks passage when closed, animated open/close, activated by pressure plate groups. Multiple doors can share one group.
   - `PressurePlateMechanismComponent` — triggers group activation when occupied by a box.
   - `GoalMechanismComponent` — win condition marker.
   - `TeleporterMechanismComponent` — paired one-to-one via group system, supports bidirectional/unidirectional (ExtraParam: 0=Bidirectional, 1=Entry, 2=Exit).
@@ -55,7 +55,7 @@ Source/TuiXiangZi/
 - **LevelSerializer** — JSON serialization/deserialization, file discovery.
 
 ### 6. Editor (`Editor/`)
-- **LevelEditorGameMode** — Brush system (10 brushes), editor modes, group management (door plates + teleporter pairs), validation, save/load/test. Broadcasts editor events via `UGameEventBus` (`Editor.*` tags). No direct overlay references — overlays are event-driven.
+- **LevelEditorGameMode** — Brush system (10 brushes), editor modes, group management (door plates + teleporter pairs; supports multiple doors per group), validation, save/load/test. Broadcasts editor events via `UGameEventBus` (`Editor.*` tags). No direct overlay references — overlays are event-driven.
 - **EditorOverlayManager** — Actor that owns overlay components. Manages overlay mode cycling (G key) and coordinated debug line flush/rebuild.
 - **EditorOverlayComponent** (abstract base) — Event-driven overlay component. Subscribes to `UGameEventBus` events, manages visibility and dirty-state.
   - `GridLineOverlay` — grid lines via `DrawDebugLine`, subscribes to `Editor.GridBoundsChanged`.
