@@ -241,13 +241,19 @@ struct FBrushDescriptor {
 
 ### 8. UI 层（UI/）
 
-**菜单**：MainMenuWidget, PresetLevelSelectWidget, CustomLevelSelectWidget
+**菜单**：
+- **MainMenuWidget**：BindWidget 绑定 WidgetSwitcher + 4 个导航按钮（预设关卡、自定义关卡、编辑器、退出），NativeConstruct 中完成按钮点击绑定和面板切换逻辑
+- **PresetLevelSelectWidget**：BindWidget 绑定 ScrollBox + 播放/返回按钮，C++ 中动态创建关卡列表条目（Border > Button > HBox，包含完成标记、关卡名、锁定图标），选中高亮通过 Border 颜色切换实现
+- **CustomLevelSelectWidget**：与 Preset 相同模式，无锁定/完成状态
 
-**游玩中**：PauseMenuWidget, TutorialWidget, TuiXiangZiPlayerController
+**游玩中**：
+- **PauseMenuWidget**：BindWidget 绑定 TitleText + 5 个按钮（继续、重新开始、主菜单、下一关、退出），NativeConstruct 中绑定点击事件，通过 GameMode 驱动游戏流程
+- **TutorialWidget**：BindWidget 绑定文本 + 推进按钮，广播 OnAdvanced 委托
+- **TuiXiangZiPlayerController**
 
 **编辑器 UI**：EditorMainWidget, Sidebar, Toolbar, StatusBar, GroupManagerPanel, Dialogs（New/Load/Save/Confirm）, ValidationResultPanel, ColorPickerPopup
 
-所有 UI 组件使用 UMG + `BindWidget` 模式，C++ 定义逻辑、Blueprint 定义布局。
+**统一 UI 模式**：所有 UI 组件（菜单、游玩中、编辑器）使用相同的 BindWidget + NativeConstruct 模式。Blueprint 仅提供布局骨架（控件名必须匹配 C++ 属性名），所有逻辑、按钮绑定、动态内容创建和样式设置均在 C++ 中完成。数据驱动的列表（关卡选择、编辑器侧边栏笔刷、分组条目等）通过 `NewObject<UWidget>` 在 C++ 中动态创建。
 
 ---
 

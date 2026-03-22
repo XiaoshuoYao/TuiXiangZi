@@ -1,38 +1,50 @@
 #include "UI/MainMenuWidget.h"
+#include "UI/PresetLevelSelectWidget.h"
+#include "UI/CustomLevelSelectWidget.h"
 #include "Components/WidgetSwitcher.h"
+#include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
-void UMainMenuWidget::OpenPresetLevelSelect()
+void UMainMenuWidget::NativeConstruct()
 {
-    if (ContentSwitcher)
-    {
-        ContentSwitcher->SetActiveWidgetIndex(1);
-    }
-}
+    Super::NativeConstruct();
 
-void UMainMenuWidget::OpenCustomLevelSelect()
-{
-    if (ContentSwitcher)
-    {
-        ContentSwitcher->SetActiveWidgetIndex(2);
-    }
+    PresetPlayButton->OnClicked.AddDynamic(this, &UMainMenuWidget::HandlePresetPlayClicked);
+    CustomPlayButton->OnClicked.AddDynamic(this, &UMainMenuWidget::HandleCustomPlayClicked);
+    EditorButton->OnClicked.AddDynamic(this, &UMainMenuWidget::HandleEditorClicked);
+    QuitButton->OnClicked.AddDynamic(this, &UMainMenuWidget::HandleQuitClicked);
 }
 
 void UMainMenuWidget::ShowMainPanel()
 {
-    if (ContentSwitcher)
+    ContentSwitcher->SetActiveWidgetIndex(0);
+}
+
+void UMainMenuWidget::HandlePresetPlayClicked()
+{
+    ContentSwitcher->SetActiveWidgetIndex(1);
+    if (PresetLevelSelect)
     {
-        ContentSwitcher->SetActiveWidgetIndex(0);
+        PresetLevelSelect->RefreshLevelList();
     }
 }
 
-void UMainMenuWidget::OpenLevelEditor()
+void UMainMenuWidget::HandleCustomPlayClicked()
+{
+    ContentSwitcher->SetActiveWidgetIndex(2);
+    if (CustomLevelSelect)
+    {
+        CustomLevelSelect->RefreshLevelList();
+    }
+}
+
+void UMainMenuWidget::HandleEditorClicked()
 {
     UGameplayStatics::OpenLevel(this, FName(TEXT("EditorMap")));
 }
 
-void UMainMenuWidget::QuitGame()
+void UMainMenuWidget::HandleQuitClicked()
 {
     UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);
 }

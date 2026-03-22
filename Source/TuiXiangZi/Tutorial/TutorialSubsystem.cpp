@@ -395,20 +395,33 @@ void UTutorialSubsystem::RecordFutureTriggers(ETutorialConditionType CondType, F
 {
 	for (int32 i = CurrentStepIndex + 1; i < ActiveTutorial->Steps.Num(); i++)
 	{
+		// Already recorded — skip
 		if (PreSatisfiedTriggers.Contains(i)) continue;
 
 		const FTutorialCondition& Trigger = ActiveTutorial->Steps[i].Trigger;
-		if (DoesConditionMatch(Trigger, CondType, CachedStepCount, CachedPlayerPos, EventTag))
+
+		// Immediate/None triggers are always satisfied on advance — skip
+		if (Trigger.Type == ETutorialConditionType::Immediate || Trigger.Type == ETutorialConditionType::None)
+		{
+			continue;
+		}
+
+		bool bMatched = DoesConditionMatch(Trigger, CondType, CachedStepCount, CachedPlayerPos, EventTag);
+		// For Player.Moved, also check OnGridPosition triggers
+		if (!bMatched && EventTag == GameEventTags::PlayerMoved)
+		{
+			bMatched = DoesConditionMatch(Trigger, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None);
+		}
+
+		if (bMatched)
 		{
 			PreSatisfiedTriggers.Add(i);
 		}
-		// For Player.Moved, also check OnGridPosition triggers
-		if (EventTag == GameEventTags::PlayerMoved && !PreSatisfiedTriggers.Contains(i))
+
+		// Stop at the first unsatisfied trigger — later steps must wait in sequence
+		if (!bMatched && !PreSatisfiedTriggers.Contains(i))
 		{
-			if (DoesConditionMatch(Trigger, ETutorialConditionType::OnGridPosition, CachedStepCount, CachedPlayerPos, NAME_None))
-			{
-				PreSatisfiedTriggers.Add(i);
-			}
+			break;
 		}
 	}
 }

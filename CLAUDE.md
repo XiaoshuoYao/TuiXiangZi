@@ -15,7 +15,7 @@
 - Grid positions use `FIntPoint` throughout
 - Mechanism components inherit from `UGridMechanismComponent`
 - Visual actors inherit from `ATileActor`
-- UI widgets follow UMG pattern with `BindWidget` properties
+- UI widgets follow UMG BindWidget + NativeConstruct pattern: Blueprint provides layout skeleton only, all logic/binding/dynamic content/styling in C++
 - Level data serialized as JSON via `ULevelSerializer`
 - Movement animation uses `UTimelineComponent` (0.15s duration)
 - Events use Unreal multicast delegates (`DECLARE_DYNAMIC_MULTICAST_DELEGATE`)

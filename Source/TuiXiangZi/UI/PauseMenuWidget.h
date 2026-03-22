@@ -5,6 +5,7 @@
 #include "PauseMenuWidget.generated.h"
 
 class UTextBlock;
+class UButton;
 
 UCLASS(Blueprintable)
 class TUIXIANGZI_API UPauseMenuWidget : public UUserWidget
@@ -12,40 +13,50 @@ class TUIXIANGZI_API UPauseMenuWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
-    void OnResumeClicked();
-
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
-    void OnReturnToMainMenuClicked();
-
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
-    void OnRestartClicked();
-
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
-    void OnExitGameClicked();
-
     /** Set the title text (e.g. "Paused" or "Level Complete!") */
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
     void SetTitleText(const FText& NewTitle);
 
     /** Show/hide the resume button (hidden when level is completed) */
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
     void SetResumeButtonVisible(bool bVisible);
 
     /** Show/hide the next level button */
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
     void SetNextLevelButtonVisible(bool bVisible);
 
-    UFUNCTION(BlueprintCallable, Category = "PauseMenu")
-    void OnNextLevelClicked();
-
 protected:
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional), Category = "PauseMenu")
+    virtual void NativeConstruct() override;
+
+    // --- BindWidget ---
+    UPROPERTY(meta = (BindWidget))
     UTextBlock* TitleText;
 
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional), Category = "PauseMenu")
-    UWidget* ResumeButton;
+    UPROPERTY(meta = (BindWidget))
+    UButton* ResumeButton;
 
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional), Category = "PauseMenu")
-    UWidget* NextLevelButton;
+    UPROPERTY(meta = (BindWidget))
+    UButton* RestartButton;
+
+    UPROPERTY(meta = (BindWidget))
+    UButton* MainMenuButton;
+
+    UPROPERTY(meta = (BindWidget))
+    UButton* NextLevelButton;
+
+    UPROPERTY(meta = (BindWidget))
+    UButton* ExitButton;
+
+private:
+    UFUNCTION()
+    void HandleResumeClicked();
+
+    UFUNCTION()
+    void HandleRestartClicked();
+
+    UFUNCTION()
+    void HandleMainMenuClicked();
+
+    UFUNCTION()
+    void HandleNextLevelClicked();
+
+    UFUNCTION()
+    void HandleExitClicked();
 };

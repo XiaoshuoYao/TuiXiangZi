@@ -69,9 +69,10 @@ Source/TuiXiangZi/
 - **TutorialSubsystem** (`UWorldSubsystem`) — Tutorial flow management. Subscribes to all `UGameEventBus` events in `OnWorldBeginPlay`. Supports gameplay and editor contexts via unified `FTutorialCondition` model.
 
 ### 8. UI (`UI/`)
-- **Menu**: MainMenuWidget, PresetLevelSelectWidget, CustomLevelSelectWidget.
-- **In-Game**: PauseMenuWidget, TutorialWidget, TuiXiangZiPlayerController.
+- **Menu**: MainMenuWidget (BindWidget buttons + WidgetSwitcher, NativeConstruct binding), PresetLevelSelectWidget (BindWidget ScrollBox/buttons, dynamically creates level entry widgets in C++, selection highlight via Border styling), CustomLevelSelectWidget (same pattern as Preset).
+- **In-Game**: PauseMenuWidget (BindWidget buttons, NativeConstruct binding), TutorialWidget (BindWidget, NativeConstruct binding).
 - **Editor**: EditorMainWidget, Sidebar, Toolbar, StatusBar, GroupManagerPanel, Dialogs (New/Load/Save/Confirm), ValidationResultPanel, ColorPickerPopup.
+- **Pattern**: All menu/in-game widgets follow the same BindWidget + NativeConstruct pattern as editor widgets. Blueprint provides only layout skeleton; all logic, button binding, dynamic content creation, and styling are in C++.
 
 ## Key Data Flows
 
@@ -102,7 +103,7 @@ LevelEditorGameMode::SaveLevel → Build FLevelData → Validate → LevelSerial
 - **Grid-Based Discrete Movement** — All positions are `FIntPoint`.
 - **Component-Based Mechanisms** — Pluggable mechanism components on TileActor.
 - **Descriptor-Driven Types** — `FCellTypeDescriptor` (GridTypes.h) centralizes cell type properties (passability, underlay, erase behavior, serialization string). `FBrushDescriptor` (EditorBrushTypes.h) centralizes editor brush properties (display name, shortcut, icon color, cell type mapping). Adding a new cell type = add enum value + add one row to each descriptor table.
-- **Event-Driven** — Central `UGameEventBus` (`UWorldSubsystem`) with `FName`-tagged events for decoupling subsystems. `BlueprintAssignable` delegates retained as thin wrappers for Blueprint UI bindings. Editor overlays subscribe to events independently — no direct coupling between GameMode and overlay components.
+- **Event-Driven** — Central `UGameEventBus` (`UWorldSubsystem`) with `FName`-tagged events for decoupling subsystems. Editor overlays subscribe to events independently — no direct coupling between GameMode and overlay components.
 - **Undo/Snapshot** — Stack-based move history in GameState.
 - **Style Catalog** — Centralized visual style management via DataAsset.
 - **Editor/Gameplay Separation** — Distinct GameModes for each context.
